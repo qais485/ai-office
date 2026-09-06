@@ -1,0 +1,34 @@
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# Markdown files in project root
+/*.md
+.opencode/
+.pytest_cache/
+graphify-out/
+Screenshots/
+UI/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
