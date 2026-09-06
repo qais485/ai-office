@@ -207,8 +207,8 @@ export default function CEOInboxPage() {
         }),
         officeService.getCEOInboxCounts(),
       ])
-      setItems(inboxRes.data)
-      setCounts(countsRes.data)
+      setItems(inboxRes.data ?? [])
+      setCounts(countsRes.data ?? null)
     } catch (err) {
       console.error('Failed to load inbox:', err)
     } finally {

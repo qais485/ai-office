@@ -117,7 +117,7 @@ const MainLayout = () => {
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      initRealtime(token)
+      initRealtime()
       connect('ceo-dashboard', token)
       if (user?.id) {
         connectUser(user.id, token)

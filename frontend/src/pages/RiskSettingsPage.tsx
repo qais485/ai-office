@@ -360,9 +360,9 @@ export default function RiskSettingsPage() {
         officeService.getRiskSummary(),
         officeService.getTools()
       ])
-      setRules(rulesRes.data)
-      setSummary(summaryRes.data)
-      setTools(toolsRes.data)
+      setRules(rulesRes.data ?? [])
+      setSummary(summaryRes.data ?? null)
+      setTools(toolsRes.data ?? [])
     } catch (err) {
       setError('Failed to load risk rules')
       console.error(err)

@@ -152,8 +152,8 @@ export default function ApprovalsPage() {
         officeService.getApprovals(filterStatus || undefined, undefined, filterRisk || undefined),
         officeService.getApprovalStats()
       ])
-      setApprovals(approvalsRes.data)
-      setStats(statsRes.data)
+      setApprovals(approvalsRes.data ?? [])
+      setStats(statsRes.data ?? null)
     } catch (err) {
       setError('Failed to load approvals')
       console.error(err)

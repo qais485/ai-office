@@ -188,7 +188,7 @@ function ManageAccessModal({ isOpen, knowledge, agents, assignedAgents, onClose,
   )
 }
 
-function KnowledgeCard({ knowledge, agents, onView, onManageAccess, onDelete }: {
+function KnowledgeCard({ knowledge, onView, onManageAccess, onDelete }: {
   knowledge: Knowledge
   agents: AIAgent[]
   onView: () => void
@@ -290,9 +290,9 @@ export default function KnowledgePage() {
         officeService.getAgents(),
         officeService.getKnowledgeStats(),
       ])
-      setKnowledge(knowledgeRes.data)
-      setAgents(agentsRes.data)
-      setStats(statsRes.data)
+      setKnowledge(knowledgeRes.data ?? [])
+      setAgents(agentsRes.data ?? [])
+      setStats(statsRes.data ?? null)
     } catch (err) {
       setError('Failed to load knowledge base')
       console.error(err)
@@ -324,7 +324,7 @@ export default function KnowledgePage() {
     setSelectedKnowledge(knowledge)
     try {
       const res = await officeService.getKnowledgeAgents(knowledge.id)
-      setAccessAgents(res.data)
+      setAccessAgents(res.data ?? [])
     } catch {
       setAccessAgents([])
     }
@@ -336,7 +336,7 @@ export default function KnowledgePage() {
     try {
       await officeService.grantKnowledgeAccess(selectedKnowledge.id, agentId)
       const res = await officeService.getKnowledgeAgents(selectedKnowledge.id)
-      setAccessAgents(res.data)
+      setAccessAgents(res.data ?? [])
     } catch (err) {
       console.error('Failed to grant access:', err)
     }
@@ -347,7 +347,7 @@ export default function KnowledgePage() {
     try {
       await officeService.revokeKnowledgeAccess(selectedKnowledge.id, agentId)
       const res = await officeService.getKnowledgeAgents(selectedKnowledge.id)
-      setAccessAgents(res.data)
+      setAccessAgents(res.data ?? [])
     } catch (err) {
       console.error('Failed to revoke access:', err)
     }
@@ -364,7 +364,7 @@ export default function KnowledgePage() {
         officeService.searchKnowledge(searchQuery),
         officeService.getAgents(),
       ])
-      const mapped: Knowledge[] = searchRes.data.map((r) => ({
+      const mapped: Knowledge[] = (searchRes.data ?? []).map((r) => ({
         id: r.id,
         name: r.name,
         description: null,
@@ -381,7 +381,7 @@ export default function KnowledgePage() {
         updated_at: null,
       }))
       setKnowledge(mapped)
-      setAgents(agentsRes.data)
+      setAgents(agentsRes.data ?? [])
     } catch (err) {
       console.error('Search failed:', err)
     } finally {

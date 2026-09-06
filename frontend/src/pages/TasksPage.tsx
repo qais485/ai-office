@@ -139,8 +139,8 @@ export default function TasksPage() {
         }),
         officeService.getTaskStats(),
       ])
-      setTasks(tasksRes.data)
-      setStats(statsRes.data)
+      setTasks(tasksRes.data ?? [])
+      setStats(statsRes.data ?? null)
     } catch (err) {
       setError('Failed to load tasks')
       console.error(err)

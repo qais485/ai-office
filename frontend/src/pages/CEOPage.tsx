@@ -274,12 +274,12 @@ export default function CEOPage() {
         officeService.getCEOInbox(),
         officeService.getCEOInboxCounts(),
       ])
-      setSummary(sumRes.data)
-      setAgents(agentsRes.data)
-      setActivity(actRes.data)
-      setPerformance(perfRes.data)
-      setInbox(inboxRes.data)
-      setInboxCounts(countsRes.data)
+      setSummary(sumRes.data ?? null)
+      setAgents(agentsRes.data ?? [])
+      setActivity(actRes.data ?? [])
+      setPerformance(perfRes.data ?? null)
+      setInbox(inboxRes.data ?? [])
+      setInboxCounts(countsRes.data ?? null)
     } catch (err) {
       console.error('Failed to load CEO dashboard:', err)
     } finally {
@@ -296,8 +296,8 @@ export default function CEOPage() {
         }),
         officeService.getCEOInboxCounts(),
       ])
-      setInbox(inboxRes.data)
-      setInboxCounts(countsRes.data)
+      setInbox(inboxRes.data ?? [])
+      setInboxCounts(countsRes.data ?? null)
     } catch (err) {
       console.error('Failed to load inbox:', err)
     }
@@ -403,7 +403,7 @@ export default function CEOPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}>
             {tab.label}
-            {'badge' in tab && tab.badge > 0 && (
+            {typeof tab.badge === 'number' && tab.badge > 0 && (
               <span className="absolute -top-0.5 -right-1 px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
                 {tab.badge > 99 ? '99+' : tab.badge}
               </span>

@@ -30,7 +30,7 @@ interface RealtimeState {
   clearEvents: () => void
 }
 
-export const useRealtimeStore = create<RealtimeState>((set, get) => ({
+export const useRealtimeStore = create<RealtimeState>((set) => ({
   connected: false,
   events: [],
   lastEvent: null,
@@ -98,7 +98,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   clearEvents: () => set({ events: [], lastEvent: null }),
 }))
 
-export function initRealtime(token?: string) {
+export function initRealtime() {
   const store = useRealtimeStore.getState()
 
   wsClient.on('connected', () => {

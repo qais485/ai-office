@@ -70,7 +70,7 @@ function ToolCard({ tool, onToggle, isSelected }: {
       setLoading(true)
       try {
         const res = await officeService.getToolWithActions(tool.id)
-        setToolDetails(res.data)
+        setToolDetails(res.data ?? null)
       } catch (err) {
         console.error('Failed to load tool details:', err)
       } finally {
@@ -184,7 +184,7 @@ export default function ToolsPage() {
     try {
       setLoading(true)
       const res = await officeService.getTools()
-      setTools(res.data)
+      setTools(res.data ?? [])
     } catch (err) {
       setError('Failed to load tools')
       console.error(err)

@@ -105,7 +105,7 @@ class WebSocketClient {
       }
     }
 
-    this.ws.onerror = (event) => {
+    this.ws.onerror = () => {
       console.error(`[WS] error connecting to ${this.url}`)
       // onclose will fire after onerror
     }

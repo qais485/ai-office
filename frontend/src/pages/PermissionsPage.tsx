@@ -95,7 +95,7 @@ export default function PermissionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
+  const [selectedAgentId] = useState<string | null>(null)
 
   useEffect(() => {
     loadPermissions()
@@ -105,7 +105,7 @@ export default function PermissionsPage() {
     try {
       setLoading(true)
       const res = await officeService.getPermissions()
-      setPermissions(res.data)
+      setPermissions(res.data ?? [])
     } catch (err) {
       setError('Failed to load permissions')
       console.error(err)
@@ -117,7 +117,7 @@ export default function PermissionsPage() {
   const loadAgentPermissions = async (agentId: string) => {
     try {
       const res = await officeService.getAgentPermissions(agentId)
-      setAgentPermissions(res.data)
+      setAgentPermissions(res.data ?? [])
     } catch (err) {
       console.error('Failed to load agent permissions:', err)
     }

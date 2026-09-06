@@ -17,7 +17,7 @@ import {
   Inbox,
   type LucideIcon,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
 import * as React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,7 @@ const DEFAULT_TOOLBAR_ITEMS: ToolbarItem[] = [
   { id: "emails", to: "/emails", title: "Emails", icon: Mail },
 ];
 
-const buttonVariants = {
+const buttonVariants: Variants = {
   initial: {
     gap: 0,
     paddingLeft: ".5rem",
@@ -64,19 +64,19 @@ const buttonVariants = {
   }),
 };
 
-const spanVariants = {
+const spanVariants: Variants = {
   initial: { width: 0, opacity: 0 },
   animate: { width: "auto", opacity: 1 },
   exit: { width: 0, opacity: 0 },
 };
 
-const notificationVariants = {
+const notificationVariants: Variants = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: -10 },
   exit: { opacity: 0, y: -20 },
 };
 
-const lineVariants = {
+const lineVariants: Variants = {
   initial: { scaleX: 0, x: "-50%" },
   animate: {
     scaleX: 1,
@@ -90,7 +90,7 @@ const lineVariants = {
   },
 };
 
-const transition = { type: "spring", bounce: 0, duration: 0.4 };
+const transition: Transition = { type: "spring", bounce: 0, duration: 0.4 };
 
 export function Toolbar({
   items = DEFAULT_TOOLBAR_ITEMS,
@@ -140,7 +140,7 @@ export function Toolbar({
               exit="exit"
               initial="initial"
               transition={{ duration: 0.3 }}
-              variants={notificationVariants as typeof notificationVariants}
+              variants={notificationVariants}
             >
               <div className="rounded-full bg-primary px-3 py-1 text-primary-foreground text-xs">
                 {items.find((item) => item.id === activeNotification)?.title}{" "}
@@ -151,7 +151,7 @@ export function Toolbar({
                 className="absolute -bottom-1 left-1/2 h-[2px] w-full origin-left bg-primary"
                 exit="exit"
                 initial="initial"
-                variants={lineVariants as typeof lineVariants}
+                variants={lineVariants}
               />
             </motion.div>
           )}
@@ -172,8 +172,8 @@ export function Toolbar({
               initial={false}
               key={item.id}
               onClick={() => handleItemClick(item)}
-              transition={transition as typeof transition}
-              variants={buttonVariants as typeof buttonVariants}
+              transition={transition}
+              variants={buttonVariants}
             >
               <item.icon
                 className={cn(selected === item.id && "text-white")}
@@ -186,8 +186,8 @@ export function Toolbar({
                     className="overflow-hidden"
                     exit="exit"
                     initial="initial"
-                    transition={transition as typeof transition}
-                    variants={spanVariants as typeof spanVariants}
+                    transition={transition}
+                    variants={spanVariants}
                   >
                     {item.title}
                   </motion.span>

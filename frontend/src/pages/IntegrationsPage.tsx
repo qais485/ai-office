@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Integration, IntegrationAccount } from '../types'
 import { officeService } from '../services/office'
-import { useAuthStore } from '../stores/useAuthStore'
 
 const INTEGRATION_ICONS: Record<string, string> = {
   gmail: 'M',
@@ -235,7 +234,6 @@ export default function IntegrationsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectModal, setConnectModal] = useState<Integration | null>(null)
-  const { user } = useAuthStore()
 
   useEffect(() => {
     loadData()
@@ -248,8 +246,8 @@ export default function IntegrationsPage() {
         officeService.getIntegrations(),
         officeService.getIntegrationAccounts(),
       ])
-      setIntegrations(integrationsRes.data)
-      setAccounts(accountsRes.data)
+      setIntegrations(integrationsRes.data ?? [])
+      setAccounts(accountsRes.data ?? [])
     } catch (err) {
       setError('Failed to load integrations')
       console.error(err)

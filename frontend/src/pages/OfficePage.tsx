@@ -16,7 +16,7 @@ const POLL_INTERVAL = 15000
 const ROOM_POLL_INTERVAL = 5000
 const APPROVALS_POLL_INTERVAL = 10000
 
-const ROOM_TYPE_CONFIG: Record<string, { icon: typeof Users; label: string; color: string }> = {
+const ROOM_TYPE_CONFIG: Record<string, { icon: typeof User; label: string; color: string }> = {
   ceo_office: { icon: User, label: 'CEO Office', color: '#8b5cf6' },
   email_support: { icon: Mail, label: 'Email Support', color: '#3b82f6' },
   meeting_room: { icon: MessageSquare, label: 'Meeting Room', color: '#10b981' },
