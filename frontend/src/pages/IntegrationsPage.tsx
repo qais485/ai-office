@@ -15,15 +15,15 @@ const INTEGRATION_ICONS: Record<string, string> = {
 }
 
 const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
-  gmail: { bg: 'bg-red-100', text: 'text-red-700' },
-  telegram: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  instagram: { bg: 'bg-pink-100', text: 'text-pink-700' },
-  slack: { bg: 'bg-purple-100', text: 'text-purple-700' },
-  discord: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-  google_calendar: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  google_drive: { bg: 'bg-green-100', text: 'text-green-700' },
-  notion: { bg: 'bg-gray-100', text: 'text-gray-700' },
-  crm: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  gmail: { bg: 'bg-red-500/15', text: 'text-red-300' },
+  telegram: { bg: 'bg-blue-500/15', text: 'text-blue-300' },
+  instagram: { bg: 'bg-pink-500/15', text: 'text-pink-300' },
+  slack: { bg: 'bg-purple-500/15', text: 'text-purple-300' },
+  discord: { bg: 'bg-indigo-500/15', text: 'text-indigo-300' },
+  google_calendar: { bg: 'bg-blue-500/15', text: 'text-blue-300' },
+  google_drive: { bg: 'bg-green-500/15', text: 'text-green-300' },
+  notion: { bg: 'bg-white/10', text: 'text-white/60' },
+  crm: { bg: 'bg-amber-500/15', text: 'text-amber-300' },
 }
 
 function IntegrationCard({
@@ -37,7 +37,7 @@ function IntegrationCard({
   onConnect: (integration: Integration) => void
   onDisconnect: (integration: Integration) => void
 }) {
-  const colors = INTEGRATION_COLORS[integration.name] || { bg: 'bg-gray-100', text: 'text-gray-700' }
+  const colors = INTEGRATION_COLORS[integration.name] || { bg: 'bg-white/10', text: 'text-white/60' }
   const iconLetter = INTEGRATION_ICONS[integration.name] || integration.display_name.charAt(0)
   const isConnected = account?.status === 'connected'
   const igUsername =
@@ -46,17 +46,17 @@ function IntegrationCard({
       : null
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white/[0.03] rounded-xl border border-white/10 p-6 hover:bg-white/[0.05] hover:border-white/15 transition-colors">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors.bg}`}>
             <span className={`text-lg font-bold ${colors.text}`}>{iconLetter}</span>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{integration.display_name}</h3>
-            <p className="text-xs text-gray-500 capitalize">
+            <h3 className="font-semibold text-white">{integration.display_name}</h3>
+            <p className="text-xs text-white/50 capitalize">
               {igUsername ? (
-                <span className="font-medium text-pink-700">@{igUsername}</span>
+                <span className="font-medium text-pink-300">@{igUsername}</span>
               ) : (
                 `${integration.auth_type} auth`
               )}
@@ -64,27 +64,27 @@ function IntegrationCard({
           </div>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          isConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+          isConnected ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/10 text-white/50'
         }`}>
           {isConnected ? 'Connected' : 'Not connected'}
         </span>
       </div>
 
-      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+      <p className="text-sm text-white/70 mb-4 line-clamp-2">
         {integration.description || 'No description available'}
       </p>
 
       {integration.capabilities && (
         <div className="mb-4">
-          <p className="text-xs font-medium text-gray-500 mb-2">Capabilities</p>
+          <p className="text-xs font-medium text-white/50 mb-2">Capabilities</p>
           <div className="flex flex-wrap gap-1">
             {Object.keys(integration.capabilities).slice(0, 4).map((cap) => (
-              <span key={cap} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+              <span key={cap} className="px-2 py-0.5 bg-white/10 text-white/60 rounded text-xs">
                 {cap.replace(/_/g, ' ')}
               </span>
             ))}
             {Object.keys(integration.capabilities).length > 4 && (
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">
+              <span className="px-2 py-0.5 bg-white/10 text-white/50 rounded text-xs">
                 +{Object.keys(integration.capabilities).length - 4} more
               </span>
             )}
@@ -92,26 +92,26 @@ function IntegrationCard({
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-4 border-t border-white/6">
         {isConnected ? (
           <>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-white/50">
               Last sync: {account?.last_sync_at ? new Date(account.last_sync_at).toLocaleDateString() : 'Never'}
             </span>            <button
               onClick={() => onDisconnect(integration)}
-              className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
             >
               Disconnect
             </button>
           </>
         ) : (
           <>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-white/50">
               {Object.keys(integration.capabilities || {}).length} capabilities
             </span>
             <button
               onClick={() => onConnect(integration)}
-              className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition-colors"
             >
               Connect
             </button>
@@ -157,20 +157,20 @@ function ConnectModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0d0d1a] border border-white/10 rounded-xl shadow-2xl shadow-black/60 max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-white">
             Connect {integration.display_name}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-white/40 hover:text-white">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-white/70 mb-4">
           {isOAuth
             ? `Authorize ${integration.display_name} to connect your account.`
             : `Enter your ${integration.display_name} credentials to connect.`}
@@ -180,24 +180,24 @@ function ConnectModal({
           {!isOAuth && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                <label className="block text-sm font-medium text-white/80 mb-1">API Key</label>
                 <input
                   type="password"
                   value={credentials.api_key || ''}
                   onChange={(e) => setCredentials({ ...credentials, api_key: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
                   placeholder="Enter your API key"
                   required
                 />
               </div>
               {integration.auth_type === 'bot_token' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bot Token</label>
+                  <label className="block text-sm font-medium text-white/80 mb-1">Bot Token</label>
                   <input
                     type="password"
                     value={credentials.bot_token || ''}
                     onChange={(e) => setCredentials({ ...credentials, bot_token: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
                     placeholder="Enter your bot token"
                     required
                   />
@@ -210,14 +210,14 @@ function ConnectModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white/80 bg-white/10 hover:bg-white/15 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors disabled:opacity-50"
             >
               {loading ? 'Connecting...' : isOAuth ? 'Authorize' : 'Connect'}
             </button>
@@ -301,8 +301,8 @@ export default function IntegrationsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading integrations...</p>
+          <div className="w-8 h-8 border-4 border-white/10 border-t-indigo-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-white/40">Loading integrations...</p>
         </div>
       </div>
     )
@@ -312,8 +312,8 @@ export default function IntegrationsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-2">{error}</p>
-          <button onClick={loadData} className="text-sm text-primary-600 hover:text-primary-700">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button onClick={loadData} className="text-sm text-indigo-400 hover:text-indigo-300">
             Try again
           </button>
         </div>
@@ -326,12 +326,12 @@ export default function IntegrationsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Integration Center</h1>
-            <p className="text-gray-500 mt-1">Connect and manage your integrations</p>
+            <h1 className="text-2xl font-bold text-white">Integration Center</h1>
+            <p className="text-white/50 mt-1">Connect and manage your integrations</p>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-4 text-sm text-white/50">
             <span>{integrations.length} available</span>
-            <span className="w-1 h-1 bg-gray-300 rounded-full" />
+            <span className="w-1 h-1 bg-white/25 rounded-full" />
             <span>{connectedCount} connected</span>
           </div>
         </div>

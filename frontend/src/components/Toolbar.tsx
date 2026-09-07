@@ -126,8 +126,8 @@ export function Toolbar({
         className={cn(
           "fixed bottom-6 left-1/2 -translate-x-1/2 z-50",
           "flex items-center gap-3 p-2",
-          "bg-background",
-          "rounded-xl border shadow-lg",
+          "bg-[#0d0d1a]/95 backdrop-blur-xl",
+          "rounded-xl border border-white/10 shadow-2xl shadow-black/50",
           "transition-all duration-200",
           className
         )}
@@ -142,13 +142,13 @@ export function Toolbar({
               transition={{ duration: 0.3 }}
               variants={notificationVariants}
             >
-              <div className="rounded-full bg-primary px-3 py-1 text-primary-foreground text-xs">
+              <div className="rounded-full bg-indigo-500 px-3 py-1 text-white text-xs">
                 {items.find((item) => item.id === activeNotification)?.title}{" "}
                 clicked!
               </div>
               <motion.div
                 animate="animate"
-                className="absolute -bottom-1 left-1/2 h-[2px] w-full origin-left bg-primary"
+                className="absolute -bottom-1 left-1/2 h-[2px] w-full origin-left bg-indigo-400"
                 exit="exit"
                 initial="initial"
                 variants={lineVariants}
@@ -166,7 +166,7 @@ export function Toolbar({
                 "font-medium text-sm transition-colors duration-300",
                 selected === item.id
                   ? "rounded-lg bg-[#1F9CFE] text-white"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-white/50 hover:bg-white/10 hover:text-white/90"
               )}
               custom={selected === item.id}
               initial={false}
@@ -197,24 +197,24 @@ export function Toolbar({
           ))}
 
           {/* Status + Notifications */}
-          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border/30">
+          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/10">
             <div
               className={cn(
                 "w-2 h-2 rounded-full",
                 connected
                   ? "bg-emerald-500"
-                  : "bg-gray-300"
+                  : "bg-white/20"
               )}
               title={connected ? "Real-time connected" : "Disconnected"}
             />
             {pendingApprovals && pendingApprovals > 0 && (
-              <span className="px-2 py-1 text-xs font-bold text-amber-700 bg-amber-50 rounded-full">
+              <span className="px-2 py-1 text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-full">
                 {pendingApprovals}
               </span>
             )}
             {unreadNotifications && unreadNotifications > 0 && (
               <div className="relative">
-                <Bell className="h-4 w-4 text-muted-foreground" />
+                <Bell className="h-4 w-4 text-white/50" />
                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold">
                   {unreadNotifications > 9 ? "9+" : unreadNotifications}
                 </span>

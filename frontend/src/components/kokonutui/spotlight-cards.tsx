@@ -130,12 +130,9 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
       }}
       className={cn(
         "group relative flex flex-col gap-5 overflow-hidden rounded-2xl border p-6",
-        // Light
-        "border-zinc-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
-        // Dark
-        "dark:border-white/6 dark:bg-white/3 dark:shadow-none",
+        "border-white/10 bg-white/[0.03]",
         "transition-[border-color] duration-300",
-        "hover:border-zinc-300 dark:hover:border-white/14",
+        "hover:border-white/20",
         item.onClick && "cursor-pointer"
       )}
       onClick={item.onClick}
@@ -188,10 +185,10 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
 
       {/* Text */}
       <div className="relative z-10 flex flex-col gap-2">
-        <h3 className="font-semibold text-[14px] text-zinc-900 tracking-tight dark:text-white">
+        <h3 className="font-semibold text-[14px] text-white tracking-tight">
           {item.title}
         </h3>
-        <p className="text-[12.5px] text-zinc-500 leading-relaxed dark:text-white/40">
+        <p className="text-[12.5px] text-white/40 leading-relaxed">
           {item.description}
         </p>
       </div>
@@ -231,27 +228,27 @@ export default function SpotlightCards({
     <div
       className={cn(
         "relative w-full overflow-hidden rounded-2xl px-8 pt-9 pb-10",
-        "bg-white dark:bg-[#06060f]",
+        "bg-transparent",
         className
       )}
     >
-      {/* Dot grid — light mode only */}
+      {/* Dot grid — subtle white dots for dark background */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 dark:hidden"
+        className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)",
+            "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)",
           backgroundSize: "22px 22px",
         }}
       />
 
       {/* Header */}
       <div className="relative mb-8 flex flex-col gap-1.5">
-        <p className="font-semibold text-[10px] text-indigo-600 uppercase tracking-[0.22em] dark:text-indigo-400/80">
+        <p className="font-semibold text-[10px] text-indigo-400/80 uppercase tracking-[0.22em]">
           {eyebrow}
         </p>
-        <h2 className="font-semibold text-[22px] text-zinc-900 tracking-tight dark:text-white">
+        <h2 className="font-semibold text-[22px] text-white tracking-tight">
           {heading}
         </h2>
       </div>

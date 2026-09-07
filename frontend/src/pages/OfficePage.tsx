@@ -397,10 +397,10 @@ const OfficePage = () => {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50">
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-[#06060f]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-3 text-sm text-gray-500">Loading office...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mx-auto" />
+          <p className="mt-3 text-sm text-white/40">Loading office...</p>
         </div>
       </div>
     )
@@ -408,15 +408,15 @@ const OfficePage = () => {
 
   if (error) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50">
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-[#06060f]">
         <div className="text-center max-w-sm">
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-red-500/10 border border-red-500/25 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">
             {error}
           </div>
           <button
             type="button"
             onClick={() => fetchData()}
-            className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
+            className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
           >
             Retry
           </button>

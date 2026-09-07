@@ -1,25 +1,25 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import type { AIAgent, AgentTemplate, AgentTool, Permission, Integration, OfficeRoom, HireAgentRequest } from '../types'
 import { officeService } from '../services/office'
 
 const LIFECYCLE_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  active: 'bg-green-100 text-green-700',
-  paused: 'bg-amber-100 text-amber-700',
-  inactive: 'bg-gray-100 text-gray-500',
-  error: 'bg-red-100 text-red-700',
-  disabled: 'bg-red-100 text-red-500',
-  archived: 'bg-gray-100 text-gray-400',
+  draft: 'bg-white/10 text-white/70',
+  active: 'bg-green-500/15 text-green-300',
+  paused: 'bg-amber-500/15 text-amber-300',
+  inactive: 'bg-white/10 text-white/50',
+  error: 'bg-red-500/15 text-red-300',
+  disabled: 'bg-red-500/15 text-red-500',
+  archived: 'bg-white/10 text-white/40',
 }
 
 const LIFECYCLE_DOT: Record<string, string> = {
-  draft: 'bg-gray-400',
+  draft: 'bg-white/30',
   active: 'bg-green-500',
   paused: 'bg-amber-500',
-  inactive: 'bg-gray-400',
+  inactive: 'bg-white/30',
   error: 'bg-red-500',
   disabled: 'bg-red-400',
-  archived: 'bg-gray-300',
+  archived: 'bg-white/20',
 }
 
 const TEMPLATE_ICONS: Record<string, string> = {
@@ -223,12 +223,12 @@ function AgentsPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-gray-200 rounded animate-pulse mt-2" />
+          <div className="h-8 w-48 bg-white/10 rounded animate-pulse" />
+          <div className="h-4 w-64 bg-white/10 rounded animate-pulse mt-2" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-48 bg-white/10 rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -238,9 +238,9 @@ function AgentsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-center justify-between">
+        <div className="mb-4 bg-red-500/10 border border-red-500/25 text-red-300 text-sm rounded-lg px-4 py-3 flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-300">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -250,16 +250,16 @@ function AgentsPage() {
 
       <div className="mb-8 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Agents</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your AI workforce and hire new agents from templates.</p>
+          <h1 className="text-2xl font-bold text-white">AI Agents</h1>
+          <p className="mt-1 text-sm text-white/50">Manage your AI workforce and hire new agents from templates.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-white/5 border border-white/10 rounded-lg p-1">
             <button
               type="button"
               onClick={() => setViewMode('agents')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'agents' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                viewMode === 'agents' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white/80'
               }`}
             >
               My Agents ({agents.length})
@@ -268,7 +268,7 @@ function AgentsPage() {
               type="button"
               onClick={() => setViewMode('templates')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'templates' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                viewMode === 'templates' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white/80'
               }`}
             >
               Templates ({templates.length})
@@ -280,7 +280,7 @@ function AgentsPage() {
       {viewMode === 'agents' && (
         <div className="mb-4 flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
             <input
@@ -288,13 +288,13 @@ function AgentsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search agents..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-white/15 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50"
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            className="px-3 py-2 text-sm border border-white/15 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 bg-white/5"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -307,21 +307,21 @@ function AgentsPage() {
 
       {viewMode === 'agents' ? (
         filteredAgents.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-12 text-center">
+            <svg className="mx-auto h-12 w-12 text-white/25" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
             </svg>
-            <h3 className="mt-3 text-sm font-medium text-gray-900">
+            <h3 className="mt-3 text-sm font-medium text-white">
               {agents.length === 0 ? 'No agents yet' : 'No matching agents'}
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-white/50">
               {agents.length === 0 ? 'Switch to Templates to hire your first AI agent.' : 'Try adjusting your search or filter.'}
             </p>
             {agents.length === 0 && (
               <button
                 type="button"
                 onClick={() => setViewMode('templates')}
-                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors"
               >
                 Browse Templates
               </button>
@@ -330,15 +330,15 @@ function AgentsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredAgents.map((agent) => (
-              <div key={agent.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+              <div key={agent.id} className="bg-white/[0.03] rounded-xl border border-white/10 p-5 hover:bg-white/[0.05] hover:border-white/15 transition-colors">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-700 text-sm font-medium shrink-0">
+                    <span className="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500/20 text-indigo-200 text-sm font-medium shrink-0">
                       {agent.name.charAt(0)}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{agent.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{agent.role}</p>
+                      <p className="text-sm font-semibold text-white truncate">{agent.name}</p>
+                      <p className="text-xs text-white/50 truncate">{agent.role}</p>
                     </div>
                   </div>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${LIFECYCLE_COLORS[agent.lifecycle_status] ?? LIFECYCLE_COLORS.draft}`}>
@@ -347,21 +347,21 @@ function AgentsPage() {
                   </span>
                 </div>
                 {agent.description && (
-                  <p className="text-xs text-gray-500 mb-3 line-clamp-2">{agent.description}</p>
+                  <p className="text-xs text-white/50 mb-3 line-clamp-2">{agent.description}</p>
                 )}
                 {agent.lifecycle_status === 'error' && agent.last_error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-3">
-                    <p className="text-xs text-red-700 line-clamp-2">{agent.last_error}</p>
+                  <div className="bg-red-500/10 border border-red-500/25 rounded-lg p-2 mb-3">
+                    <p className="text-xs text-red-300 line-clamp-2">{agent.last_error}</p>
                   </div>
                 )}
                 {agent.lifecycle_status === 'disabled' && agent.disabled_reason && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 mb-3">
-                    <p className="text-xs text-gray-600 line-clamp-2">{agent.disabled_reason}</p>
+                  <div className="bg-white/[0.04] border border-white/10 rounded-lg p-2 mb-3">
+                    <p className="text-xs text-white/70 line-clamp-2">{agent.disabled_reason}</p>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+                <div className="flex items-center gap-2 text-xs text-white/50 mb-4">
                   {getRoomName(agent.room_id) && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-md">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/10 rounded-md">
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21" />
                       </svg>
@@ -374,7 +374,7 @@ function AgentsPage() {
                     <button
                       type="button"
                       onClick={() => handleLifecycle(agent.id, 'pause')}
-                      className="flex-1 px-2 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                      className="flex-1 px-2 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/10 rounded-lg hover:bg-amber-500/20 transition-colors"
                     >
                       Pause
                     </button>
@@ -383,7 +383,7 @@ function AgentsPage() {
                     <button
                       type="button"
                       onClick={() => handleLifecycle(agent.id, 'resume')}
-                      className="flex-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                      className="flex-1 px-2 py-1.5 text-xs font-medium text-green-300 bg-green-500/10 rounded-lg hover:bg-green-500/20 transition-colors"
                     >
                       Resume
                     </button>
@@ -392,7 +392,7 @@ function AgentsPage() {
                     <button
                       type="button"
                       onClick={() => handleLifecycle(agent.id, 'restart')}
-                      className="flex-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                      className="flex-1 px-2 py-1.5 text-xs font-medium text-blue-300 bg-blue-500/10 rounded-lg hover:bg-blue-500/20 transition-colors"
                     >
                       Restart
                     </button>
@@ -401,7 +401,7 @@ function AgentsPage() {
                     <button
                       type="button"
                       onClick={() => handleLifecycle(agent.id, 'resume')}
-                      className="flex-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                      className="flex-1 px-2 py-1.5 text-xs font-medium text-green-300 bg-green-500/10 rounded-lg hover:bg-green-500/20 transition-colors"
                     >
                       Activate
                     </button>
@@ -410,7 +410,7 @@ function AgentsPage() {
                     <button
                       type="button"
                       onClick={() => handleLifecycle(agent.id, 'disable')}
-                      className="flex-1 px-2 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                      className="flex-1 px-2 py-1.5 text-xs font-medium text-red-300 bg-red-500/10 rounded-lg hover:bg-red-500/20 transition-colors"
                     >
                       Disable
                     </button>
@@ -418,7 +418,7 @@ function AgentsPage() {
                   <button
                     type="button"
                     onClick={() => setDeletingAgent(agent)}
-                    className="px-2 py-1.5 text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    className="px-2 py-1.5 text-xs font-medium text-red-500 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
                     title="Fire agent"
                   >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -433,22 +433,22 @@ function AgentsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {templates.filter((t) => t.is_active).map((template) => (
-            <div key={template.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow flex flex-col">
+            <div key={template.id} className="bg-white/[0.03] rounded-xl border border-white/10 p-5 hover:bg-white/[0.05] hover:border-white/15 transition-colors flex flex-col">
               <div className="flex items-start gap-3 mb-3">
-                <span className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary-50 text-primary-600 shrink-0">
+                <span className="flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d={TEMPLATE_ICONS[template.role] ?? TEMPLATE_ICONS.email_support} />
                   </svg>
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{template.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{template.role.replace(/_/g, ' ')}</p>
+                  <p className="text-sm font-semibold text-white">{template.name}</p>
+                  <p className="text-xs text-white/50 capitalize">{template.role.replace(/_/g, ' ')}</p>
                 </div>
               </div>
               {template.description && (
-                <p className="text-xs text-gray-500 mb-4 line-clamp-3 flex-1">{template.description}</p>
+                <p className="text-xs text-white/50 mb-4 line-clamp-3 flex-1">{template.description}</p>
               )}
-              <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+              <div className="flex items-center gap-4 text-xs text-white/50 mb-4">
                 {template.default_tools && (
                   <span className="flex items-center gap-1">
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -469,7 +469,7 @@ function AgentsPage() {
               <button
                 type="button"
                 onClick={() => startHireWizard(template)}
-                className="w-full px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors"
               >
                 Hire Agent
               </button>
@@ -480,18 +480,18 @@ function AgentsPage() {
 
       {showWizard && selectedTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !isHiring && setShowWizard(false)} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isHiring && setShowWizard(false)} />
+          <div className="relative bg-[#0d0d1a] border border-white/10 rounded-xl shadow-2xl shadow-black/60 w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Hire Agent</h2>
-                <p className="text-xs text-gray-500 mt-0.5">from {selectedTemplate.name} template</p>
+                <h2 className="text-base font-semibold text-white">Hire Agent</h2>
+                <p className="text-xs text-white/50 mt-0.5">from {selectedTemplate.name} template</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowWizard(false)}
                 disabled={isHiring}
-                className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                className="p-1 rounded-md text-white/40 hover:text-white/70 hover:bg-white/10 disabled:opacity-50"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -499,12 +499,12 @@ function AgentsPage() {
               </button>
             </div>
 
-            <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+            <div className="px-5 py-3 border-b border-white/6 shrink-0">
               <div className="flex items-center gap-2">
                 {WIZARD_STEPS.map((step, i) => (
                   <div key={step.id} className="flex items-center gap-2 flex-1">
                     <div className={`flex items-center justify-center h-6 w-6 rounded-full text-xs font-medium shrink-0 ${
-                      i <= wizardStep ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-400'
+                      i <= wizardStep ? 'bg-indigo-600 text-white' : 'bg-white/10 text-white/40'
                     }`}>
                       {i < wizardStep ? (
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -515,52 +515,52 @@ function AgentsPage() {
                       )}
                     </div>
                     {i < WIZARD_STEPS.length - 1 && (
-                      <div className={`h-0.5 flex-1 rounded ${i < wizardStep ? 'bg-primary-600' : 'bg-gray-100'}`} />
+                      <div className={`h-0.5 flex-1 rounded ${i < wizardStep ? 'bg-indigo-600' : 'bg-white/10'}`} />
                     )}
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">{WIZARD_STEPS[wizardStep].description}</p>
+              <p className="text-xs text-white/50 mt-2">{WIZARD_STEPS[wizardStep].description}</p>
             </div>
 
             <div className="px-5 py-4 overflow-y-auto flex-1">
               {wizardStep === 0 && (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700">Selected Template</p>
-                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 flex items-center gap-3">
-                    <span className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary-100 text-primary-600 shrink-0">
+                  <p className="text-sm font-medium text-white/80">Selected Template</p>
+                  <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4 flex items-center gap-3">
+                    <span className="flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-500/20 text-indigo-400 shrink-0">
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d={TEMPLATE_ICONS[selectedTemplate.role] ?? TEMPLATE_ICONS.email_support} />
                       </svg>
                     </span>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{selectedTemplate.name}</p>
-                      <p className="text-xs text-gray-500">{selectedTemplate.description}</p>
+                      <p className="text-sm font-semibold text-white">{selectedTemplate.name}</p>
+                      <p className="text-xs text-white/50">{selectedTemplate.description}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500">Switch to Templates tab to choose a different template.</p>
+                  <p className="text-xs text-white/50">Switch to Templates tab to choose a different template.</p>
                 </div>
               )}
 
               {wizardStep === 1 && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Agent Name</label>
+                    <label className="block text-sm font-medium text-white/80 mb-1">Agent Name</label>
                     <input
                       type="text"
                       value={agentName}
                       onChange={(e) => setAgentName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 text-sm border border-white/15 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50"
                       placeholder="e.g. Support Bot"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-white/80 mb-1">Description</label>
                     <textarea
                       value={agentDescription}
                       onChange={(e) => setAgentDescription(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                      className="w-full px-3 py-2 text-sm border border-white/15 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 resize-none"
                       placeholder="What does this agent do?"
                     />
                   </div>
@@ -569,9 +569,9 @@ function AgentsPage() {
 
               {wizardStep === 2 && (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700">Select tools this agent can use</p>
+                  <p className="text-sm font-medium text-white/80">Select tools this agent can use</p>
                   {availableTools.length === 0 ? (
-                    <p className="text-xs text-gray-500">No tools available for this template.</p>
+                    <p className="text-xs text-white/50">No tools available for this template.</p>
                   ) : (
                     <div className="space-y-2">
                       {availableTools.map((tool) => (
@@ -579,32 +579,32 @@ function AgentsPage() {
                           key={tool.id}
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                             selectedToolIds.includes(tool.id)
-                              ? 'border-primary-300 bg-primary-50'
-                              : 'border-gray-200 hover:bg-gray-50'
+                              ? 'border-indigo-500/40 bg-indigo-500/10'
+                              : 'border-white/10 hover:bg-white/10'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={selectedToolIds.includes(tool.id)}
                             onChange={() => toggleTool(tool.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            className="h-4 w-4 rounded border-white/15 text-indigo-400 focus:ring-indigo-500/40"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{tool.display_name}</p>
+                            <p className="text-sm font-medium text-white">{tool.display_name}</p>
                             {tool.description && (
-                              <p className="text-xs text-gray-500 truncate">{tool.description}</p>
+                              <p className="text-xs text-white/50 truncate">{tool.description}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              tool.risk_level === 'high' ? 'bg-red-100 text-red-700' :
-                              tool.risk_level === 'medium' ? 'bg-amber-100 text-amber-700' :
-                              'bg-green-100 text-green-700'
+                              tool.risk_level === 'high' ? 'bg-red-500/15 text-red-300' :
+                              tool.risk_level === 'medium' ? 'bg-amber-500/15 text-amber-300' :
+                              'bg-green-500/15 text-green-300'
                             }`}>
                               {tool.risk_level}
                             </span>
                             {tool.requires_approval && (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">approval</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-white/70">approval</span>
                             )}
                           </div>
                         </label>
@@ -616,9 +616,9 @@ function AgentsPage() {
 
               {wizardStep === 3 && (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700">Connect integrations for this agent</p>
+                  <p className="text-sm font-medium text-white/80">Connect integrations for this agent</p>
                   {availableIntegrations.length === 0 ? (
-                    <p className="text-xs text-gray-500">No integrations available for this template.</p>
+                    <p className="text-xs text-white/50">No integrations available for this template.</p>
                   ) : (
                     <div className="space-y-2">
                       {availableIntegrations.map((integration) => (
@@ -626,28 +626,28 @@ function AgentsPage() {
                           key={integration.id}
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                             selectedIntegrationIds.includes(integration.id)
-                              ? 'border-primary-300 bg-primary-50'
-                              : 'border-gray-200 hover:bg-gray-50'
+                              ? 'border-indigo-500/40 bg-indigo-500/10'
+                              : 'border-white/10 hover:bg-white/10'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={selectedIntegrationIds.includes(integration.id)}
                             onChange={() => toggleIntegration(integration.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            className="h-4 w-4 rounded border-white/15 text-indigo-400 focus:ring-indigo-500/40"
                           />
-                          <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-gray-100 text-gray-600 shrink-0">
+                          <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/10 text-white/70 shrink-0">
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d={INTEGRATION_ICONS[integration.name] ?? INTEGRATION_ICONS.gmail} />
                             </svg>
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{integration.display_name}</p>
+                            <p className="text-sm font-medium text-white">{integration.display_name}</p>
                             {integration.description && (
-                              <p className="text-xs text-gray-500 truncate">{integration.description}</p>
+                              <p className="text-xs text-white/50 truncate">{integration.description}</p>
                             )}
                           </div>
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 shrink-0">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-white/70 shrink-0">
                             {integration.auth_type}
                           </span>
                         </label>
@@ -659,9 +659,9 @@ function AgentsPage() {
 
               {wizardStep === 4 && (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700">Set permissions for this agent</p>
+                  <p className="text-sm font-medium text-white/80">Set permissions for this agent</p>
                   {availablePermissions.length === 0 ? (
-                    <p className="text-xs text-gray-500">No permissions available for this template.</p>
+                    <p className="text-xs text-white/50">No permissions available for this template.</p>
                   ) : (
                     <div className="space-y-2">
                       {availablePermissions.map((perm) => (
@@ -669,26 +669,26 @@ function AgentsPage() {
                           key={perm.id}
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                             selectedPermissionIds.includes(perm.id)
-                              ? 'border-primary-300 bg-primary-50'
-                              : 'border-gray-200 hover:bg-gray-50'
+                              ? 'border-indigo-500/40 bg-indigo-500/10'
+                              : 'border-white/10 hover:bg-white/10'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={selectedPermissionIds.includes(perm.id)}
                             onChange={() => togglePermission(perm.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            className="h-4 w-4 rounded border-white/15 text-indigo-400 focus:ring-indigo-500/40"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{perm.name}</p>
+                            <p className="text-sm font-medium text-white">{perm.name}</p>
                             {perm.description && (
-                              <p className="text-xs text-gray-500 truncate">{perm.description}</p>
+                              <p className="text-xs text-white/50 truncate">{perm.description}</p>
                             )}
                           </div>
                           <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${
-                            perm.risk_level === 'high' ? 'bg-red-100 text-red-700' :
-                            perm.risk_level === 'medium' ? 'bg-amber-100 text-amber-700' :
-                            'bg-green-100 text-green-700'
+                            perm.risk_level === 'high' ? 'bg-red-500/15 text-red-300' :
+                            perm.risk_level === 'medium' ? 'bg-amber-500/15 text-amber-300' :
+                            'bg-green-500/15 text-green-300'
                           }`}>
                             {perm.category}
                           </span>
@@ -702,15 +702,15 @@ function AgentsPage() {
               {wizardStep === 5 && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-700">Assign a room for this agent</p>
+                    <p className="text-sm font-medium text-white/80">Assign a room for this agent</p>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={autoCreateRoom}
                         onChange={(e) => setAutoCreateRoom(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        className="h-4 w-4 rounded border-white/15 text-indigo-400 focus:ring-indigo-500/40"
                       />
-                      <span className="text-sm text-gray-600">Auto-create room</span>
+                      <span className="text-sm text-white/70">Auto-create room</span>
                     </label>
                   </div>
                   {!autoCreateRoom && (
@@ -718,7 +718,7 @@ function AgentsPage() {
                       <select
                         value={selectedRoomId}
                         onChange={(e) => setSelectedRoomId(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                        className="w-full px-3 py-2 text-sm border border-white/15 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 bg-white/5"
                       >
                         <option value="">No room (flexible)</option>
                         {rooms.filter((r) => r.status === 'available').map((room) => (
@@ -726,49 +726,49 @@ function AgentsPage() {
                         ))}
                       </select>
                       {rooms.filter((r) => r.status === 'available').length === 0 && (
-                        <p className="text-xs text-gray-500">No available rooms. Enable auto-create or create a room first.</p>
+                        <p className="text-xs text-white/50">No available rooms. Enable auto-create or create a room first.</p>
                       )}
                     </>
                   )}
                   {autoCreateRoom && (
-                    <p className="text-xs text-gray-500">A new workspace room will be automatically created for this agent.</p>
+                    <p className="text-xs text-white/50">A new workspace room will be automatically created for this agent.</p>
                   )}
                 </div>
               )}
 
               {wizardStep === 6 && (
                 <div className="space-y-4">
-                  <p className="text-sm font-medium text-gray-700">Review your agent configuration</p>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-white/80">Review your agent configuration</p>
+                  <div className="bg-white/[0.04] rounded-lg p-4 space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Template</span>
-                      <span className="font-medium text-gray-900">{selectedTemplate.name}</span>
+                      <span className="text-white/50">Template</span>
+                      <span className="font-medium text-white">{selectedTemplate.name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Name</span>
-                      <span className="font-medium text-gray-900">{agentName || '(unnamed)'}</span>
+                      <span className="text-white/50">Name</span>
+                      <span className="font-medium text-white">{agentName || '(unnamed)'}</span>
                     </div>
                     {agentDescription && (
                       <div className="text-sm">
-                        <span className="text-gray-500">Description</span>
-                        <p className="text-gray-900 mt-1">{agentDescription}</p>
+                        <span className="text-white/50">Description</span>
+                        <p className="text-white mt-1">{agentDescription}</p>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Tools</span>
-                      <span className="font-medium text-gray-900">{selectedToolIds.length} selected</span>
+                      <span className="text-white/50">Tools</span>
+                      <span className="font-medium text-white">{selectedToolIds.length} selected</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Integrations</span>
-                      <span className="font-medium text-gray-900">{selectedIntegrationIds.length} selected</span>
+                      <span className="text-white/50">Integrations</span>
+                      <span className="font-medium text-white">{selectedIntegrationIds.length} selected</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Permissions</span>
-                      <span className="font-medium text-gray-900">{selectedPermissionIds.length} selected</span>
+                      <span className="text-white/50">Permissions</span>
+                      <span className="font-medium text-white">{selectedPermissionIds.length} selected</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Room</span>
-                      <span className="font-medium text-gray-900">
+                      <span className="text-white/50">Room</span>
+                      <span className="font-medium text-white">
                         {autoCreateRoom ? 'Auto-create' : (selectedRoomId ? getRoomName(selectedRoomId) ?? 'Unknown' : 'Not assigned')}
                       </span>
                     </div>
@@ -777,12 +777,12 @@ function AgentsPage() {
               )}
             </div>
 
-            <div className="px-5 py-3 border-t border-gray-200 flex items-center justify-between shrink-0">
+            <div className="px-5 py-3 border-t border-white/10 flex items-center justify-between shrink-0">
               <button
                 type="button"
                 onClick={prevStep}
                 disabled={wizardStep === 0 || isHiring}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white/80 bg-white/10 rounded-lg hover:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Back
               </button>
@@ -791,7 +791,7 @@ function AgentsPage() {
                   type="button"
                   onClick={() => setShowWizard(false)}
                   disabled={isHiring}
-                  className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
                 >
                   Cancel
                 </button>
@@ -799,7 +799,7 @@ function AgentsPage() {
                   <button
                     type="button"
                     onClick={nextStep}
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors"
                   >
                     Next
                   </button>
@@ -808,7 +808,7 @@ function AgentsPage() {
                     type="button"
                     onClick={() => setShowConfirmHire(true)}
                     disabled={isHiring || !agentName.trim()}
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Review & Hire
                   </button>
@@ -821,20 +821,20 @@ function AgentsPage() {
 
       {showConfirmHire && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !isHiring && setShowConfirmHire(false)} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isHiring && setShowConfirmHire(false)} />
+          <div className="relative bg-[#0d0d1a] border border-white/10 rounded-xl shadow-2xl shadow-black/60 w-full max-w-sm mx-4 overflow-hidden">
             <div className="px-5 py-4">
-              <h2 className="text-base font-semibold text-gray-900">Confirm Hire</h2>
-              <p className="mt-2 text-sm text-gray-600">
+              <h2 className="text-base font-semibold text-white">Confirm Hire</h2>
+              <p className="mt-2 text-sm text-white/70">
                 Hire <strong>{agentName}</strong> as a {selectedTemplate?.name}? This will create the agent and assign it a workspace.
               </p>
             </div>
-            <div className="px-5 py-3 bg-gray-50 flex justify-end gap-2">
+            <div className="px-5 py-3 bg-white/[0.04] flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowConfirmHire(false)}
                 disabled={isHiring}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white/80 bg-white/5 border border-white/15 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Cancel
               </button>
@@ -842,7 +842,7 @@ function AgentsPage() {
                 type="button"
                 onClick={handleHire}
                 disabled={isHiring}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-50 transition-colors"
               >
                 {isHiring ? 'Hiring...' : 'Hire Agent'}
               </button>
@@ -853,20 +853,20 @@ function AgentsPage() {
 
       {deletingAgent && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !isDeleting && setDeletingAgent(null)} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isDeleting && setDeletingAgent(null)} />
+          <div className="relative bg-[#0d0d1a] border border-white/10 rounded-xl shadow-2xl shadow-black/60 w-full max-w-sm mx-4 overflow-hidden">
             <div className="px-5 py-4">
-              <h2 className="text-base font-semibold text-gray-900">Fire Agent</h2>
-              <p className="mt-2 text-sm text-gray-600">
+              <h2 className="text-base font-semibold text-white">Fire Agent</h2>
+              <p className="mt-2 text-sm text-white/70">
                 Are you sure you want to fire <strong>{deletingAgent.name}</strong>? This will permanently remove the agent and its configuration. This action cannot be undone.
               </p>
             </div>
-            <div className="px-5 py-3 bg-gray-50 flex justify-end gap-2">
+            <div className="px-5 py-3 bg-white/[0.04] flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setDeletingAgent(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white/80 bg-white/5 border border-white/15 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Cancel
               </button>
@@ -874,7 +874,7 @@ function AgentsPage() {
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-500 disabled:opacity-50 transition-colors"
               >
                 {isDeleting ? 'Firing...' : 'Fire Agent'}
               </button>

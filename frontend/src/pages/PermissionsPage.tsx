@@ -1,34 +1,34 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import type { Permission, AgentPermission } from '../types'
 import { officeService } from '../services/office'
 
 const PERMISSION_CATEGORIES: Record<string, { label: string; icon: string; color: string }> = {
-  email: { label: 'Email', icon: '✉', color: 'bg-red-100 text-red-700' },
-  support: { label: 'Support', icon: '🎧', color: 'bg-orange-100 text-orange-700' },
-  crm: { label: 'CRM', icon: '👥', color: 'bg-amber-100 text-amber-700' },
-  sales: { label: 'Sales', icon: '💰', color: 'bg-green-100 text-green-700' },
-  finance: { label: 'Finance', icon: '💳', color: 'bg-emerald-100 text-emerald-700' },
-  knowledge: { label: 'Knowledge', icon: '📚', color: 'bg-teal-100 text-teal-700' },
-  content: { label: 'Content', icon: '📝', color: 'bg-purple-100 text-purple-700' },
-  social: { label: 'Social', icon: '🌐', color: 'bg-pink-100 text-pink-700' },
-  research: { label: 'Research', icon: '🔍', color: 'bg-cyan-100 text-cyan-700' },
-  analytics: { label: 'Analytics', icon: '📊', color: 'bg-indigo-100 text-indigo-700' },
-  data: { label: 'Data', icon: '🗄', color: 'bg-violet-100 text-violet-700' },
-  calendar: { label: 'Calendar', icon: '📅', color: 'bg-blue-100 text-blue-700' },
-  general: { label: 'General', icon: '⚙', color: 'bg-gray-100 text-gray-700' },
+  email: { label: 'Email', icon: 'âœ‰', color: 'bg-red-500/15 text-red-300' },
+  support: { label: 'Support', icon: 'ðŸŽ§', color: 'bg-orange-500/15 text-orange-300' },
+  crm: { label: 'CRM', icon: 'ðŸ‘¥', color: 'bg-amber-500/15 text-amber-300' },
+  sales: { label: 'Sales', icon: 'ðŸ’°', color: 'bg-green-500/15 text-green-300' },
+  finance: { label: 'Finance', icon: 'ðŸ’³', color: 'bg-emerald-500/15 text-emerald-300' },
+  knowledge: { label: 'Knowledge', icon: 'ðŸ“š', color: 'bg-teal-500/15 text-teal-300' },
+  content: { label: 'Content', icon: 'ðŸ“', color: 'bg-purple-500/15 text-purple-300' },
+  social: { label: 'Social', icon: 'ðŸŒ', color: 'bg-pink-500/15 text-pink-300' },
+  research: { label: 'Research', icon: 'ðŸ”', color: 'bg-cyan-500/15 text-cyan-300' },
+  analytics: { label: 'Analytics', icon: 'ðŸ“Š', color: 'bg-indigo-500/15 text-indigo-300' },
+  data: { label: 'Data', icon: 'ðŸ—„', color: 'bg-violet-500/15 text-violet-300' },
+  calendar: { label: 'Calendar', icon: 'ðŸ“…', color: 'bg-blue-500/15 text-blue-300' },
+  general: { label: 'General', icon: 'âš™', color: 'bg-white/10 text-white/80' },
 }
 
 const RISK_LEVELS: Record<string, { label: string; color: string }> = {
-  low: { label: 'Low', color: 'bg-green-100 text-green-700' },
-  medium: { label: 'Medium', color: 'bg-amber-100 text-amber-700' },
-  high: { label: 'High', color: 'bg-red-100 text-red-700' },
-  critical: { label: 'Critical', color: 'bg-red-200 text-red-800' },
+  low: { label: 'Low', color: 'bg-green-500/15 text-green-300' },
+  medium: { label: 'Medium', color: 'bg-amber-500/15 text-amber-300' },
+  high: { label: 'High', color: 'bg-red-500/15 text-red-300' },
+  critical: { label: 'Critical', color: 'bg-red-500/25 text-red-300' },
 }
 
 const ACCESS_LEVELS: Record<string, { label: string; color: string; icon: string }> = {
-  allowed: { label: 'Allowed', color: 'bg-green-100 text-green-700', icon: '✓' },
-  approval_required: { label: 'Approval Required', color: 'bg-amber-100 text-amber-700', icon: '⚠' },
-  denied: { label: 'Denied', color: 'bg-red-100 text-red-700', icon: '✗' },
+  allowed: { label: 'Allowed', color: 'bg-green-500/15 text-green-300', icon: 'âœ“' },
+  approval_required: { label: 'Approval Required', color: 'bg-amber-500/15 text-amber-300', icon: 'âš ' },
+  denied: { label: 'Denied', color: 'bg-red-500/15 text-red-300', icon: 'âœ—' },
 }
 
 function PermissionCard({ permission, accessLevel, onToggle }: {
@@ -49,14 +49,14 @@ function PermissionCard({ permission, accessLevel, onToggle }: {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-white/[0.03] rounded-xl border border-white/10 p-5 hover:bg-white/[0.05] hover:border-white/15 transition-colors">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${category.color}`}>
             {category.icon}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{permission.name}</h3>
+            <h3 className="font-semibold text-white">{permission.name}</h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${category.color}`}>
                 {category.label}
@@ -76,11 +76,11 @@ function PermissionCard({ permission, accessLevel, onToggle }: {
       </div>
 
       {permission.description && (
-        <p className="text-sm text-gray-600 mb-3">{permission.description}</p>
+        <p className="text-sm text-white/70 mb-3">{permission.description}</p>
       )}
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <span className="text-xs text-gray-400">
+      <div className="flex items-center justify-between pt-3 border-t border-white/6">
+        <span className="text-xs text-white/40">
           {permission.default_approval_required ? 'Default: Approval Required' : 'Default: Allowed'}
         </span>
       </div>
@@ -162,8 +162,8 @@ export default function PermissionsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading permissions...</p>
+          <div className="w-8 h-8 border-4 border-white/10 border-t-indigo-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-white/50">Loading permissions...</p>
         </div>
       </div>
     )
@@ -173,8 +173,8 @@ export default function PermissionsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-2">{error}</p>
-          <button onClick={loadPermissions} className="text-sm text-primary-600 hover:text-primary-700">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button onClick={loadPermissions} className="text-sm text-indigo-400 hover:text-indigo-300">
             Try again
           </button>
         </div>
@@ -187,12 +187,12 @@ export default function PermissionsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Permission Registry</h1>
-            <p className="text-gray-500 mt-1">Manage permissions for AI agents</p>
+            <h1 className="text-2xl font-bold text-white">Permission Registry</h1>
+            <p className="text-white/50 mt-1">Manage permissions for AI agents</p>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-4 text-sm text-white/50">
             <span>{permissions.length} permissions</span>
-            <span className="w-1 h-1 bg-gray-300 rounded-full" />
+            <span className="w-1 h-1 bg-white/20 rounded-full" />
             <span>{agentPermissions.length} assigned</span>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function PermissionsPage() {
               placeholder="Search permissions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-4 py-2 border border-white/15 rounded-lg focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50"
             />
           </div>
           <div className="flex gap-2">
@@ -214,8 +214,8 @@ export default function PermissionsPage() {
               onClick={() => setSelectedCategory(null)}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                 !selectedCategory
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-indigo-500/20 text-indigo-200'
+                  : 'bg-white/10 text-white/70 hover:bg-white/15'
               }`}
             >
               All
@@ -228,8 +228,8 @@ export default function PermissionsPage() {
                   onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                     selectedCategory === cat
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-indigo-500/20 text-indigo-200'
+                      : 'bg-white/10 text-white/70 hover:bg-white/15'
                   }`}
                 >
                   {catInfo.icon} {catInfo.label}
@@ -253,7 +253,7 @@ export default function PermissionsPage() {
 
       {filteredPermissions.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No permissions found</p>
+          <p className="text-white/50">No permissions found</p>
         </div>
       )}
     </div>

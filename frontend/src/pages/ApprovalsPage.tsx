@@ -4,18 +4,18 @@ import { officeService } from '../services/office'
 import ApprovalDetailModal from '../components/office/ApprovalDetailModal'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700', icon: '⏳' },
-  approved: { label: 'Approved', color: 'bg-green-100 text-green-700', icon: '✓' },
-  rejected: { label: 'Rejected', color: 'bg-red-100 text-red-700', icon: '✗' },
-  expired: { label: 'Expired', color: 'bg-gray-100 text-gray-600', icon: '⏰' },
-  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-500', icon: '⊘' },
+  pending: { label: 'Pending', color: 'bg-amber-500/15 text-amber-300', icon: '⏳' },
+  approved: { label: 'Approved', color: 'bg-green-500/15 text-green-300', icon: '✓' },
+  rejected: { label: 'Rejected', color: 'bg-red-500/15 text-red-300', icon: '✗' },
+  expired: { label: 'Expired', color: 'bg-white/10 text-white/60', icon: '⏰' },
+  cancelled: { label: 'Cancelled', color: 'bg-white/10 text-white/50', icon: '⊘' },
 }
 
 const RISK_CONFIG: Record<string, { label: string; color: string }> = {
-  low: { label: 'Low', color: 'bg-green-100 text-green-700' },
-  medium: { label: 'Medium', color: 'bg-amber-100 text-amber-700' },
-  high: { label: 'High', color: 'bg-red-100 text-red-700' },
-  critical: { label: 'Critical', color: 'bg-red-200 text-red-800' },
+  low: { label: 'Low', color: 'bg-green-500/15 text-green-300' },
+  medium: { label: 'Medium', color: 'bg-amber-500/15 text-amber-300' },
+  high: { label: 'High', color: 'bg-red-500/15 text-red-300' },
+  critical: { label: 'Critical', color: 'bg-red-500/25 text-red-300' },
 }
 
 function ApprovalCard({ approval, onApprove, onReject, onCancel, onRetry, onSelect }: {
@@ -34,7 +34,7 @@ function ApprovalCard({ approval, onApprove, onReject, onCancel, onRetry, onSele
   return (
     <div
       onClick={() => onSelect(approval)}
-      className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white/[0.03] rounded-xl border border-white/10 p-5 hover:bg-white/[0.05] hover:border-white/15 transition-colors cursor-pointer"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -42,7 +42,7 @@ function ApprovalCard({ approval, onApprove, onReject, onCancel, onRetry, onSele
             {status.icon}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{approval.action}</h3>
+            <h3 className="font-semibold text-white">{approval.action}</h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${status.color}`}>
                 {status.label}
@@ -57,18 +57,18 @@ function ApprovalCard({ approval, onApprove, onReject, onCancel, onRetry, onSele
 
       <div className="space-y-2 mb-4">
         <div className="flex items-center text-sm">
-          <span className="text-gray-500 w-20">Agent:</span>
-          <span className="font-medium text-gray-900">{approval.agent_name || 'Unknown'}</span>
+          <span className="text-white/50 w-20">Agent:</span>
+          <span className="font-medium text-white">{approval.agent_name || 'Unknown'}</span>
           {approval.agent_role && (
-            <span className="text-gray-400 ml-1">({approval.agent_role})</span>
+            <span className="text-white/40 ml-1">({approval.agent_role})</span>
           )}
         </div>
         {approval.parameters && Object.keys(approval.parameters).length > 0 && (
           <div className="flex items-start text-sm">
-            <span className="text-gray-500 w-20">Details:</span>
+            <span className="text-white/50 w-20">Details:</span>
             <div className="flex-1">
               {Object.entries(approval.parameters).map(([key, value]) => (
-                <div key={key} className="text-gray-700">
+                <div key={key} className="text-white/80">
                   <span className="font-medium">{key}:</span> {String(value)}
                 </div>
               ))}
@@ -77,22 +77,22 @@ function ApprovalCard({ approval, onApprove, onReject, onCancel, onRetry, onSele
         )}
         {approval.reason && (
           <div className="flex items-start text-sm">
-            <span className="text-gray-500 w-20">Reason:</span>
-            <span className="text-gray-700">{approval.reason}</span>
+            <span className="text-white/50 w-20">Reason:</span>
+            <span className="text-white/80">{approval.reason}</span>
           </div>
         )}
       </div>
 
       {approval.decision_notes && (
-        <div className="bg-gray-50 rounded-lg p-3 mb-4">
-          <p className="text-sm text-gray-600">
+        <div className="bg-white/[0.04] rounded-lg p-3 mb-4">
+          <p className="text-sm text-white/70">
             <span className="font-medium">Decision Notes:</span> {approval.decision_notes}
           </p>
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <span className="text-xs text-gray-400">
+      <div className="flex items-center justify-between pt-3 border-t border-white/6">
+        <span className="text-xs text-white/40">
           {approval.requested_at && new Date(approval.requested_at).toLocaleString()}
         </span>
         <div className="flex items-center gap-2">
@@ -100,19 +100,19 @@ function ApprovalCard({ approval, onApprove, onReject, onCancel, onRetry, onSele
             <>
               <button
                 onClick={() => onApprove(approval.id)}
-                className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-500 transition-colors"
               >
                 Approve
               </button>
               <button
                 onClick={() => onReject(approval.id)}
-                className="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                className="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-500 transition-colors"
               >
                 Reject
               </button>
               <button
                 onClick={() => onCancel(approval.id)}
-                className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-3 py-1.5 bg-white/10 text-white/80 text-sm font-medium rounded-lg hover:bg-white/15 transition-colors"
               >
                 Cancel
               </button>
@@ -121,7 +121,7 @@ function ApprovalCard({ approval, onApprove, onReject, onCancel, onRetry, onSele
           {canRetry && (
             <button
               onClick={() => onRetry(approval.id)}
-              className="px-3 py-1.5 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200 transition-colors"
+              className="px-3 py-1.5 bg-amber-500/15 text-amber-300 text-sm font-medium rounded-lg hover:bg-amber-500/20 transition-colors"
             >
               Retry
             </button>
@@ -202,8 +202,8 @@ export default function ApprovalsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading approvals...</p>
+          <div className="w-8 h-8 border-4 border-white/10 border-t-indigo-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-white/40">Loading approvals...</p>
         </div>
       </div>
     )
@@ -213,8 +213,8 @@ export default function ApprovalsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-2">{error}</p>
-          <button onClick={loadData} className="text-sm text-primary-600 hover:text-primary-700">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button onClick={loadData} className="text-sm text-indigo-400 hover:text-indigo-300">
             Try again
           </button>
         </div>
@@ -227,8 +227,8 @@ export default function ApprovalsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Approval Center</h1>
-            <p className="text-gray-500 mt-1">Review and manage agent approval requests</p>
+            <h1 className="text-2xl font-bold text-white">Approval Center</h1>
+            <p className="text-white/50 mt-1">Review and manage agent approval requests</p>
           </div>
         </div>
       </div>
@@ -239,56 +239,56 @@ export default function ApprovalsPage() {
             onClick={() => setFilterStatus(null)}
             className={`p-4 rounded-xl border transition-colors ${
               !filterStatus
-                ? 'bg-primary-50 border-primary-200'
-                : 'bg-white border-gray-200 hover:border-gray-300'
+                ? 'bg-indigo-500/10 border-indigo-500/30'
+                : 'bg-white/[0.03] border-white/10 hover:border-white/20'
             }`}
           >
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-500">Total</div>
+            <div className="text-2xl font-bold text-white">{stats.total}</div>
+            <div className="text-sm text-white/50">Total</div>
           </button>
           <button
             onClick={() => setFilterStatus(filterStatus === 'pending' ? null : 'pending')}
             className={`p-4 rounded-xl border transition-colors ${
               filterStatus === 'pending'
-                ? 'bg-amber-50 border-amber-200'
-                : 'bg-white border-gray-200 hover:border-gray-300'
+                ? 'bg-amber-500/10 border-amber-500/25'
+                : 'bg-white/[0.03] border-white/10 hover:border-white/20'
             }`}
           >
-            <div className="text-2xl font-bold text-amber-600">{stats.pending}</div>
-            <div className="text-sm text-gray-500">Pending</div>
+            <div className="text-2xl font-bold text-amber-400">{stats.pending}</div>
+            <div className="text-sm text-white/50">Pending</div>
           </button>
           <button
             onClick={() => setFilterStatus(filterStatus === 'approved' ? null : 'approved')}
             className={`p-4 rounded-xl border transition-colors ${
               filterStatus === 'approved'
-                ? 'bg-green-50 border-green-200'
-                : 'bg-white border-gray-200 hover:border-gray-300'
+                ? 'bg-green-500/10 border-green-500/25'
+                : 'bg-white/[0.03] border-white/10 hover:border-white/20'
             }`}
           >
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-            <div className="text-sm text-gray-500">Approved</div>
+            <div className="text-2xl font-bold text-green-400">{stats.approved}</div>
+            <div className="text-sm text-white/50">Approved</div>
           </button>
           <button
             onClick={() => setFilterStatus(filterStatus === 'rejected' ? null : 'rejected')}
             className={`p-4 rounded-xl border transition-colors ${
               filterStatus === 'rejected'
-                ? 'bg-red-50 border-red-200'
-                : 'bg-white border-gray-200 hover:border-gray-300'
+                ? 'bg-red-500/10 border-red-500/25'
+                : 'bg-white/[0.03] border-white/10 hover:border-white/20'
             }`}
           >
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-            <div className="text-sm text-gray-500">Rejected</div>
+            <div className="text-2xl font-bold text-red-400">{stats.rejected}</div>
+            <div className="text-sm text-white/50">Rejected</div>
           </button>
           <button
             onClick={() => setFilterStatus(filterStatus === 'expired' ? null : 'expired')}
             className={`p-4 rounded-xl border transition-colors ${
               filterStatus === 'expired'
-                ? 'bg-gray-50 border-gray-200'
-                : 'bg-white border-gray-200 hover:border-gray-300'
+                ? 'bg-white/[0.06] border-white/15'
+                : 'bg-white/[0.03] border-white/10 hover:border-white/20'
             }`}
           >
-            <div className="text-2xl font-bold text-gray-600">{stats.expired}</div>
-            <div className="text-sm text-gray-500">Expired</div>
+            <div className="text-2xl font-bold text-white/70">{stats.expired}</div>
+            <div className="text-sm text-white/50">Expired</div>
           </button>
         </div>
       )}
@@ -296,7 +296,7 @@ export default function ApprovalsPage() {
       <div className="mb-6">
         <div className="flex items-center gap-4">
           <div className="flex gap-2">
-            <span className="text-sm text-gray-500 py-1.5">Risk Level:</span>
+            <span className="text-sm text-white/50 py-1.5">Risk Level:</span>
             {['low', 'medium', 'high', 'critical'].map((risk) => {
               const config = RISK_CONFIG[risk]
               return (
@@ -306,7 +306,7 @@ export default function ApprovalsPage() {
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                     filterRisk === risk
                       ? `${config.color}`
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-white/10 text-white/60 hover:bg-white/15'
                   }`}
                 >
                   {config.label}
@@ -333,7 +333,7 @@ export default function ApprovalsPage() {
 
       {approvals.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No approvals found</p>
+          <p className="text-white/40">No approvals found</p>
         </div>
       )}
 

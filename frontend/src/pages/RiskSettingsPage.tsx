@@ -3,16 +3,16 @@ import type { RiskRule, RiskSummary, AgentTool } from '../types'
 import { officeService } from '../services/office'
 
 const RISK_LEVELS: Record<string, { label: string; color: string; description: string }> = {
-  low: { label: 'Low', color: 'bg-green-100 text-green-700', description: 'Auto-approved, logged' },
-  medium: { label: 'Medium', color: 'bg-amber-100 text-amber-700', description: 'Auto-approved, logged' },
-  high: { label: 'High', color: 'bg-red-100 text-red-700', description: 'Requires CEO approval' },
-  critical: { label: 'Critical', color: 'bg-red-200 text-red-800', description: 'Requires CEO approval + 2FA' },
+  low: { label: 'Low', color: 'bg-green-500/15 text-green-300', description: 'Auto-approved, logged' },
+  medium: { label: 'Medium', color: 'bg-amber-500/15 text-amber-300', description: 'Auto-approved, logged' },
+  high: { label: 'High', color: 'bg-red-500/15 text-red-300', description: 'Requires CEO approval' },
+  critical: { label: 'Critical', color: 'bg-red-500/25 text-red-300', description: 'Requires CEO approval + 2FA' },
 }
 
 function Toast({ message, type, onClose }: { message: string; type: 'error' | 'success'; onClose: () => void }) {
   return (
-    <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${
-      type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+    <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg text-sm font-medium ${
+      type === 'error' ? 'bg-red-500/15 border border-red-500/30 text-red-400' : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
     }`}>
       <div className="flex items-center gap-2">
         <span>{message}</span>
@@ -29,17 +29,17 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }: {
   onCancel: () => void
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-sm text-gray-600 mb-6">{message}</p>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-[#0d0d1a] border border-white/10 rounded-xl shadow-2xl shadow-black/60 p-6 w-full max-w-sm">
+        <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+        <p className="text-sm text-white/70 mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+            className="px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 rounded-lg transition-colors">
             Cancel
           </button>
           <button onClick={onConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+            className="px-4 py-2 text-sm font-medium text-red-400 bg-red-500/15 hover:bg-red-500/25 rounded-lg transition-colors">
             Delete
           </button>
         </div>
@@ -59,20 +59,20 @@ function RiskRuleCard({ rule, tools, onEdit, onDelete, onToggle }: {
   const tool = tools.find(t => t.id === rule.tool_id)
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-white/[0.03] rounded-xl border border-white/10 p-5 hover:bg-white/[0.05] hover:border-white/15 transition-colors">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${risk.color}`}>
             {rule.risk_level === 'critical' ? '🔴' : rule.risk_level === 'high' ? '🟠' : rule.risk_level === 'medium' ? '🟡' : '🟢'}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{rule.name}</h3>
+            <h3 className="font-semibold text-white">{rule.name}</h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${risk.color}`}>
                 {risk.label}
               </span>
               {rule.requires_approval && (
-                <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/15 text-amber-300">
                   Requires Approval
                 </span>
               )}
@@ -83,7 +83,7 @@ function RiskRuleCard({ rule, tools, onEdit, onDelete, onToggle }: {
           <button
             onClick={() => onToggle(rule.id, !rule.is_active)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              rule.is_active ? 'bg-primary-600' : 'bg-gray-200'
+              rule.is_active ? 'bg-indigo-600' : 'bg-white/10'
             }`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -94,28 +94,28 @@ function RiskRuleCard({ rule, tools, onEdit, onDelete, onToggle }: {
       </div>
 
       {rule.description && (
-        <p className="text-sm text-gray-600 mb-3">{rule.description}</p>
+        <p className="text-sm text-white/70 mb-3">{rule.description}</p>
       )}
 
       <div className="space-y-2 mb-4">
         {rule.action_name && (
           <div className="flex items-center text-sm">
-            <span className="text-gray-500 w-24">Action:</span>
-            <span className="font-medium text-gray-900">{rule.action_name}</span>
+            <span className="text-white/50 w-24">Action:</span>
+            <span className="font-medium text-white">{rule.action_name}</span>
           </div>
         )}
         {tool && (
           <div className="flex items-center text-sm">
-            <span className="text-gray-500 w-24">Tool:</span>
-            <span className="font-medium text-gray-900">{tool.display_name}</span>
+            <span className="text-white/50 w-24">Tool:</span>
+            <span className="font-medium text-white">{tool.display_name}</span>
           </div>
         )}
         {rule.conditions && Object.keys(rule.conditions).length > 0 && (
           <div className="flex items-start text-sm">
-            <span className="text-gray-500 w-24">Conditions:</span>
+            <span className="text-white/50 w-24">Conditions:</span>
             <div className="flex-1">
               {Object.entries(rule.conditions).map(([key, value]) => (
-                <div key={key} className="text-gray-700">
+                <div key={key} className="text-white/80">
                   <span className="font-medium">{key}:</span> {JSON.stringify(value)}
                 </div>
               ))}
@@ -123,21 +123,21 @@ function RiskRuleCard({ rule, tools, onEdit, onDelete, onToggle }: {
           </div>
         )}
         <div className="flex items-center text-sm">
-          <span className="text-gray-500 w-24">Priority:</span>
-          <span className="font-medium text-gray-900">{rule.priority}</span>
+          <span className="text-white/50 w-24">Priority:</span>
+          <span className="font-medium text-white">{rule.priority}</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+      <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/6">
         <button
           onClick={() => onEdit(rule)}
-          className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
         >
           Edit
         </button>
         <button
           onClick={() => onDelete(rule.id)}
-          className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
         >
           Delete
         </button>
@@ -193,47 +193,47 @@ function RiskRuleForm({ rule, tools, onSave, onCancel, saving }: {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-[#0d0d1a] border border-white/10 rounded-xl shadow-2xl shadow-black/60 p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-semibold text-white mb-4">
           {rule ? 'Edit Risk Rule' : 'Create Risk Rule'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-white/80 mb-1">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-white/80 mb-1">Description</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Action Name</label>
+            <label className="block text-sm font-medium text-white/80 mb-1">Action Name</label>
             <input
               type="text"
               value={actionName}
               onChange={(e) => setActionName(e.target.value)}
               placeholder="e.g., issue_refund"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tool</label>
+            <label className="block text-sm font-medium text-white/80 mb-1">Tool</label>
             <select
               value={toolId}
               onChange={(e) => setToolId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
             >
               <option value="">All tools</option>
               {tools.map(tool => (
@@ -242,7 +242,7 @@ function RiskRuleForm({ rule, tools, onSave, onCancel, saving }: {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+            <label className="block text-sm font-medium text-white/80 mb-2">Risk Level</label>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(RISK_LEVELS).map(([key, config]) => (
                 <button
@@ -256,26 +256,26 @@ function RiskRuleForm({ rule, tools, onSave, onCancel, saving }: {
                   }}
                   className={`p-3 rounded-lg border-2 text-left transition-colors ${
                     riskLevel === key
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-indigo-500 bg-indigo-500/10'
+                      : 'border-white/10 hover:border-white/20'
                   }`}
                 >
                   <div className="font-medium text-sm">{config.label}</div>
-                  <div className="text-xs text-gray-500">{config.description}</div>
+                  <div className="text-xs text-white/50">{config.description}</div>
                 </button>
               ))}
             </div>
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Requires Approval</label>
-              <p className="text-xs text-gray-500">CEO must approve before execution</p>
+              <label className="block text-sm font-medium text-white/80">Requires Approval</label>
+              <p className="text-xs text-white/50">CEO must approve before execution</p>
             </div>
             <button
               type="button"
               onClick={() => setRequiresApproval(!requiresApproval)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                requiresApproval ? 'bg-primary-600' : 'bg-gray-200'
+                requiresApproval ? 'bg-indigo-600' : 'bg-white/10'
               }`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -284,43 +284,43 @@ function RiskRuleForm({ rule, tools, onSave, onCancel, saving }: {
             </button>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+            <label className="block text-sm font-medium text-white/80 mb-1">Priority</label>
             <input
               type="number"
               value={priority}
               onChange={(e) => setPriority(parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
             />
-            <p className="text-xs text-gray-500 mt-1">Higher priority rules are checked first</p>
+            <p className="text-xs text-white/50 mt-1">Higher priority rules are checked first</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Conditions (JSON)</label>
+            <label className="block text-sm font-medium text-white/80 mb-1">Conditions (JSON)</label>
             <textarea
               value={conditionsText}
               onChange={(e) => { setConditionsText(e.target.value); setConditionsError(null) }}
               rows={4}
               placeholder={'{"amount": {"min": 100, "max": 10000}, "type": "refund"}'}
-              className={`w-full px-3 py-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                conditionsError ? 'border-red-300' : 'border-gray-300'
+              className={`w-full px-3 py-2 bg-white/5 border rounded-lg font-mono text-sm text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 ${
+                conditionsError ? 'border-red-500/50' : 'border-white/10'
               }`}
             />
             {conditionsError && (
-              <p className="text-xs text-red-600 mt-1">{conditionsError}</p>
+              <p className="text-xs text-red-400 mt-1">{conditionsError}</p>
             )}
-            <p className="text-xs text-gray-500 mt-1">Supported operators: min, max, equals, contains</p>
+            <p className="text-xs text-white/50 mt-1">Supported operators: min, max, equals, contains</p>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors disabled:opacity-50"
             >
               {saving ? 'Saving...' : rule ? 'Save Changes' : 'Create Rule'}
             </button>
@@ -439,8 +439,8 @@ export default function RiskSettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading risk rules...</p>
+          <div className="w-8 h-8 border-4 border-white/10 border-t-indigo-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-white/40">Loading risk rules...</p>
         </div>
       </div>
     )
@@ -450,8 +450,8 @@ export default function RiskSettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-2">{error}</p>
-          <button onClick={loadData} className="text-sm text-primary-600 hover:text-primary-700">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button onClick={loadData} className="text-sm text-indigo-400 hover:text-indigo-300">
             Try again
           </button>
         </div>
@@ -475,12 +475,12 @@ export default function RiskSettingsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Risk Settings</h1>
-            <p className="text-gray-500 mt-1">Configure risk rules for AI agent actions</p>
+            <h1 className="text-2xl font-bold text-white">Risk Settings</h1>
+            <p className="text-white/50 mt-1">Configure risk rules for AI agent actions</p>
           </div>
           <button
             onClick={openCreateForm}
-            className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-500 transition-colors"
           >
             + Add Rule
           </button>
@@ -489,25 +489,25 @@ export default function RiskSettingsPage() {
 
       {summary && (
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-gray-900">{summary.total_rules}</div>
-            <div className="text-sm text-gray-500">Total Rules</div>
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+            <div className="text-2xl font-bold text-white">{summary.total_rules}</div>
+            <div className="text-sm text-white/50">Total Rules</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-green-600">{summary.by_risk_level.low}</div>
-            <div className="text-sm text-gray-500">Low Risk</div>
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+            <div className="text-2xl font-bold text-green-400">{summary.by_risk_level.low}</div>
+            <div className="text-sm text-white/50">Low Risk</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-amber-600">{summary.by_risk_level.medium}</div>
-            <div className="text-sm text-gray-500">Medium Risk</div>
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+            <div className="text-2xl font-bold text-amber-400">{summary.by_risk_level.medium}</div>
+            <div className="text-sm text-white/50">Medium Risk</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-red-600">{summary.by_risk_level.high}</div>
-            <div className="text-sm text-gray-500">High Risk</div>
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+            <div className="text-2xl font-bold text-red-400">{summary.by_risk_level.high}</div>
+            <div className="text-sm text-white/50">High Risk</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-red-800">{summary.by_risk_level.critical}</div>
-            <div className="text-sm text-gray-500">Critical</div>
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+            <div className="text-2xl font-bold text-red-300">{summary.by_risk_level.critical}</div>
+            <div className="text-sm text-white/50">Critical</div>
           </div>
         </div>
       )}
@@ -527,10 +527,10 @@ export default function RiskSettingsPage() {
 
       {rules.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No risk rules configured</p>
+          <p className="text-white/40">No risk rules configured</p>
           <button
             onClick={openCreateForm}
-            className="mt-4 text-sm text-primary-600 hover:text-primary-700"
+            className="mt-4 text-sm text-indigo-400 hover:text-indigo-300"
           >
             Create your first rule
           </button>

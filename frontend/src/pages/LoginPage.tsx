@@ -55,23 +55,23 @@ const LoginPage = () => {
   }, [googleLogin, navigate])
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 bg-[#06060f]">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-xl border border-gray-200 p-8">
+        <div className="bg-white/[0.03] rounded-xl border border-white/10 p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Sign in</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <h1 className="text-2xl font-bold text-white">Sign in</h1>
+            <p className="mt-2 text-sm text-white/70">
               Welcome back to AI Virtual Office
             </p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-6">
+            <div className="bg-red-500/10 border border-red-500/25 text-red-400 text-sm rounded-lg px-4 py-3 mb-6">
               {error}
               <button
                 type="button"
                 onClick={clearError}
-                className="ml-2 text-red-500 hover:text-red-700 underline"
+                className="ml-2 text-red-400 hover:text-red-300 underline"
               >
                 Dismiss
               </button>
@@ -80,12 +80,12 @@ const LoginPage = () => {
 
           {isLoading && (
             <div className="flex justify-center mb-6">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-400" />
             </div>
           )}
 
           {!GOOGLE_CLIENT_ID && (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm rounded-lg px-4 py-3 mb-6">
+            <div className="bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-sm rounded-lg px-4 py-3 mb-6">
               Google Client ID is not configured. Set <code>VITE_GOOGLE_CLIENT_ID</code> in your <code>.env</code> file.
             </div>
           )}

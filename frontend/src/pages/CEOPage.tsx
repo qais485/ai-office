@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import type { CEOSummary, CEOAgentOverview, CEOActivity, CEOPerformance, CEOInboxItem, CEOInboxCounts } from '../types'
 import { officeService } from '../services/office'
 import { useAuthStore } from '../stores/useAuthStore'
@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/useAuthStore'
 const STATUS_DOT: Record<string, string> = {
   active: 'bg-green-500',
   busy: 'bg-amber-500',
-  inactive: 'bg-gray-400',
+  inactive: 'bg-white/30',
   error: 'bg-red-500',
   paused: 'bg-yellow-500',
   disabled: 'bg-red-400',
@@ -15,79 +15,79 @@ const STATUS_DOT: Record<string, string> = {
 const LIFECYCLE_DOT: Record<string, string> = {
   active: 'bg-green-500',
   paused: 'bg-yellow-500',
-  inactive: 'bg-gray-400',
+  inactive: 'bg-white/30',
   error: 'bg-red-500',
   disabled: 'bg-red-400',
-  draft: 'bg-gray-300',
-  archived: 'bg-gray-300',
+  draft: 'bg-white/20',
+  archived: 'bg-white/20',
 }
 
 const INBOX_TYPE_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
-  approval: { icon: '⏳', label: 'Approval', color: 'bg-purple-100 text-purple-700' },
-  agent_error: { icon: '🔴', label: 'Agent Error', color: 'bg-red-100 text-red-700' },
-  failed_task: { icon: '❌', label: 'Failed Task', color: 'bg-red-100 text-red-700' },
-  pending_task: { icon: '📋', label: 'Pending Task', color: 'bg-blue-100 text-blue-700' },
-  notification: { icon: '🔔', label: 'Notification', color: 'bg-gray-100 text-gray-600' },
-  system_alert: { icon: '⚠️', label: 'System Alert', color: 'bg-amber-100 text-amber-700' },
+  approval: { icon: 'â³', label: 'Approval', color: 'bg-purple-500/15 text-purple-300' },
+  agent_error: { icon: 'ðŸ”´', label: 'Agent Error', color: 'bg-red-500/15 text-red-300' },
+  failed_task: { icon: 'âŒ', label: 'Failed Task', color: 'bg-red-500/15 text-red-300' },
+  pending_task: { icon: 'ðŸ“‹', label: 'Pending Task', color: 'bg-blue-500/15 text-blue-300' },
+  notification: { icon: 'ðŸ””', label: 'Notification', color: 'bg-white/10 text-white/70' },
+  system_alert: { icon: 'âš ï¸', label: 'System Alert', color: 'bg-amber-500/15 text-amber-300' },
 }
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; border: string; dot: string }> = {
-  critical: { label: 'Critical', color: 'bg-red-100 text-red-700', border: 'border-l-red-500', dot: 'bg-red-500' },
-  high: { label: 'High', color: 'bg-orange-100 text-orange-700', border: 'border-l-orange-500', dot: 'bg-orange-500' },
-  medium: { label: 'Medium', color: 'bg-amber-100 text-amber-700', border: 'border-l-amber-400', dot: 'bg-amber-400' },
-  low: { label: 'Low', color: 'bg-gray-100 text-gray-600', border: 'border-l-gray-300', dot: 'bg-gray-400' },
+  critical: { label: 'Critical', color: 'bg-red-500/15 text-red-300', border: 'border-l-red-500', dot: 'bg-red-500' },
+  high: { label: 'High', color: 'bg-orange-500/15 text-orange-300', border: 'border-l-orange-500', dot: 'bg-orange-500' },
+  medium: { label: 'Medium', color: 'bg-amber-500/15 text-amber-300', border: 'border-l-amber-400', dot: 'bg-amber-400' },
+  low: { label: 'Low', color: 'bg-white/10 text-white/70', border: 'border-l-white/20', dot: 'bg-white/30' },
 }
 
 function StatCard({ label, value, sub, color }: { label: string; value: number | string; sub?: string; color: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{label}</div>
+    <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+      <div className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1">{label}</div>
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
-      {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
+      {sub && <div className="text-xs text-white/40 mt-0.5">{sub}</div>}
     </div>
   )
 }
 
 function AgentCard({ agent }: { agent: CEOAgentOverview }) {
-  const dot = STATUS_DOT[agent.status] || 'bg-gray-400'
-  const lifecycleDot = LIFECYCLE_DOT[agent.lifecycle_status || ''] || 'bg-gray-400'
+  const dot = STATUS_DOT[agent.status] || 'bg-white/30'
+  const lifecycleDot = LIFECYCLE_DOT[agent.lifecycle_status || ''] || 'bg-white/30'
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4 hover:bg-white/[0.05] hover:border-white/15 transition-colors">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className={`w-2.5 h-2.5 rounded-full ${dot}`} />
           <div>
-            <div className="font-semibold text-gray-900 text-sm">{agent.name}</div>
-            <div className="text-xs text-gray-500">{agent.role}</div>
+            <div className="font-semibold text-white text-sm">{agent.name}</div>
+            <div className="text-xs text-white/50">{agent.role}</div>
           </div>
         </div>
         <span className={`w-2 h-2 rounded-full ${lifecycleDot}`} title={agent.lifecycle_status || ''} />
       </div>
 
       {agent.current_task ? (
-        <div className="bg-amber-50 rounded-lg px-3 py-2 mb-2">
+        <div className="bg-amber-500/10 rounded-lg px-3 py-2 mb-2">
           <div className="text-[11px] text-amber-600 font-medium">Current Task</div>
-          <div className="text-xs text-gray-700 truncate">{agent.current_task.title}</div>
+          <div className="text-xs text-white/80 truncate">{agent.current_task.title}</div>
         </div>
       ) : (
-        <div className="bg-gray-50 rounded-lg px-3 py-2 mb-2">
-          <div className="text-xs text-gray-400">No active task</div>
+        <div className="bg-white/[0.04] rounded-lg px-3 py-2 mb-2">
+          <div className="text-xs text-white/40">No active task</div>
         </div>
       )}
 
       {agent.room && (
-        <div className="text-xs text-gray-500 mb-2">📍 {agent.room.name}</div>
+        <div className="text-xs text-white/50 mb-2">ðŸ“ {agent.room.name}</div>
       )}
 
-      <div className="flex items-center gap-3 text-xs text-gray-500">
-        <span>✓ {agent.tasks.completed}</span>
-        <span>⏳ {agent.tasks.pending}</span>
-        {agent.tasks.failed > 0 && <span className="text-red-500">✗ {agent.tasks.failed}</span>}
+      <div className="flex items-center gap-3 text-xs text-white/50">
+        <span>âœ“ {agent.tasks.completed}</span>
+        <span>â³ {agent.tasks.pending}</span>
+        {agent.tasks.failed > 0 && <span className="text-red-500">âœ— {agent.tasks.failed}</span>}
       </div>
 
       {agent.last_error && (
-        <div className="mt-2 bg-red-50 rounded-lg px-3 py-1.5">
+        <div className="mt-2 bg-red-500/10 rounded-lg px-3 py-1.5">
           <div className="text-[11px] text-red-600 truncate">{agent.last_error}</div>
         </div>
       )}
@@ -98,21 +98,21 @@ function AgentCard({ agent }: { agent: CEOAgentOverview }) {
 function ActivityItem({ activity }: { activity: CEOActivity }) {
   const timeAgo = getTimeAgo(activity.created_at)
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-xs font-medium text-primary-700 shrink-0">
+    <div className="flex items-start gap-3 py-2.5 border-b border-white/6 last:border-0">
+      <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs font-medium text-indigo-300 shrink-0">
         {activity.agent_name?.charAt(0) || '?'}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm text-gray-900">
+        <div className="text-sm text-white">
           <span className="font-medium">{activity.agent_name}</span>
-          <span className="text-gray-500 mx-1">·</span>
-          <span className="text-gray-600">{activity.description || activity.activity_type}</span>
+          <span className="text-white/50 mx-1">Â·</span>
+          <span className="text-white/70">{activity.description || activity.activity_type}</span>
         </div>
         {activity.tool_name && (
-          <div className="text-xs text-gray-400 mt-0.5">using {activity.tool_name}</div>
+          <div className="text-xs text-white/40 mt-0.5">using {activity.tool_name}</div>
         )}
       </div>
-      <span className="text-xs text-gray-400 shrink-0">{timeAgo}</span>
+      <span className="text-xs text-white/40 shrink-0">{timeAgo}</span>
     </div>
   )
 }
@@ -130,14 +130,14 @@ function InboxCard({ item, onApprove, onReject, onDismiss }: {
   const isNotification = item.type === 'notification'
 
   return (
-    <div className={`border-l-4 ${priorityConfig.border} bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow`}>
+    <div className={`border-l-4 ${priorityConfig.border} bg-white/[0.03] rounded-xl border border-white/10 p-5 hover:bg-white/[0.05] hover:border-white/15 transition-colors`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: 'transparent' }}>
             {typeConfig.icon}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm">{item.title}</h3>
+            <h3 className="font-semibold text-white text-sm">{item.title}</h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeConfig.color}`}>
                 {typeConfig.label}
@@ -146,47 +146,47 @@ function InboxCard({ item, onApprove, onReject, onDismiss }: {
                 {priorityConfig.label}
               </span>
               {item.expires_soon && (
-                <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-300">
                   Expires Soon
                 </span>
               )}
             </div>
           </div>
         </div>
-        <span className="text-xs text-gray-400">{getTimeAgo(item.created_at)}</span>
+        <span className="text-xs text-white/40">{getTimeAgo(item.created_at)}</span>
       </div>
 
-      <p className="text-sm text-gray-600 mb-3">{item.message}</p>
+      <p className="text-sm text-white/70 mb-3">{item.message}</p>
 
-      <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+      <div className="flex items-center gap-4 text-xs text-white/50 mb-3">
         {item.agent_name && (
           <div className="flex items-center gap-1">
-            <span className="font-medium text-gray-700">{item.agent_name}</span>
+            <span className="font-medium text-white/80">{item.agent_name}</span>
           </div>
         )}
         {item.risk_level && (
           <span className={`px-1.5 py-0.5 rounded ${
-            item.risk_level === 'critical' ? 'bg-red-100 text-red-700' :
-            item.risk_level === 'high' ? 'bg-orange-100 text-orange-700' :
-            item.risk_level === 'medium' ? 'bg-amber-100 text-amber-700' :
-            'bg-gray-100 text-gray-600'
+            item.risk_level === 'critical' ? 'bg-red-500/15 text-red-300' :
+            item.risk_level === 'high' ? 'bg-orange-500/15 text-orange-300' :
+            item.risk_level === 'medium' ? 'bg-amber-500/15 text-amber-300' :
+            'bg-white/10 text-white/70'
           }`}>{item.risk_level} risk</span>
         )}
         {item.reason && (
-          <span className="text-gray-400">Reason: {item.reason}</span>
+          <span className="text-white/40">Reason: {item.reason}</span>
         )}
       </div>
 
       {item.error_detail && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+        <div className="bg-red-500/10 border border-red-500/25 rounded-lg p-3 mb-3">
           <p className="text-xs text-red-700">{item.error_detail}</p>
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-3 border-t border-white/6">
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${priorityConfig.dot}`} />
-          <span className="text-xs text-gray-400">{new Date(item.created_at).toLocaleString()}</span>
+          <span className="text-xs text-white/40">{new Date(item.created_at).toLocaleString()}</span>
         </div>
         <div className="flex items-center gap-2">
           {isApproval && (
@@ -208,7 +208,7 @@ function InboxCard({ item, onApprove, onReject, onDismiss }: {
           {isFailed && (
             <button
               onClick={() => onDismiss(item)}
-              className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-3 py-1.5 bg-white/10 text-white/80 text-xs font-medium rounded-lg hover:bg-white/15 transition-colors"
             >
               Dismiss
             </button>
@@ -216,7 +216,7 @@ function InboxCard({ item, onApprove, onReject, onDismiss }: {
           {isNotification && !item.is_read && (
             <button
               onClick={() => onDismiss(item)}
-              className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-3 py-1.5 bg-white/10 text-white/80 text-xs font-medium rounded-lg hover:bg-white/15 transition-colors"
             >
               Mark Read
             </button>
@@ -351,8 +351,8 @@ export default function CEOPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading dashboard...</p>
+          <div className="w-8 h-8 border-4 border-white/10 border-t-indigo-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-white/50">Loading dashboard...</p>
         </div>
       </div>
     )
@@ -371,12 +371,12 @@ export default function CEOPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">CEO Dashboard</h1>
-            <p className="text-gray-500 mt-1">Welcome back, {user?.name || 'CEO'}</p>
+            <h1 className="text-2xl font-bold text-white">CEO Dashboard</h1>
+            <p className="text-white/50 mt-1">Welcome back, {user?.name || 'CEO'}</p>
           </div>
           <button onClick={loadAll}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            ↻ Refresh
+            className="px-4 py-2 text-sm font-medium text-white/80 bg-white/5 border border-white/15 rounded-lg hover:bg-white/10 transition-colors">
+            â†» Refresh
           </button>
         </div>
       </div>
@@ -384,23 +384,23 @@ export default function CEOPage() {
       {/* Summary Stats */}
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-          <StatCard label="Total Agents" value={summary.agents.total} sub={`${summary.agents.active} active`} color="text-gray-900" />
+          <StatCard label="Total Agents" value={summary.agents.total} sub={`${summary.agents.active} active`} color="text-white" />
           <StatCard label="Active Agents" value={summary.agents.active} color="text-green-600" />
-          <StatCard label="Errors" value={summary.agents.error} color={summary.agents.error > 0 ? 'text-red-600' : 'text-gray-900'} />
+          <StatCard label="Errors" value={summary.agents.error} color={summary.agents.error > 0 ? 'text-red-600' : 'text-white'} />
           <StatCard label="Tasks Today" value={summary.tasks.today} sub={`${summary.tasks.running} running`} color="text-blue-600" />
           <StatCard label="Success Rate" value={`${summary.tasks.success_rate}%`} sub={`${summary.tasks.completed} done`} color="text-emerald-600" />
-          <StatCard label="Pending Approvals" value={summary.approvals.pending} color={summary.approvals.pending > 0 ? 'text-amber-600' : 'text-gray-900'} />
+          <StatCard label="Pending Approvals" value={summary.approvals.pending} color={summary.approvals.pending > 0 ? 'text-amber-600' : 'text-white'} />
         </div>
       )}
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 mb-6 border-b border-gray-200">
+      <div className="flex items-center gap-1 mb-6 border-b border-white/10">
         {tabs.map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors relative ${
               activeTab === tab.key
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-indigo-400 text-indigo-400'
+                : 'border-transparent text-white/50 hover:text-white/80'
             }`}>
             {tab.label}
             {typeof tab.badge === 'number' && tab.badge > 0 && (
@@ -417,40 +417,40 @@ export default function CEOPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">Agent Status</h2>
-              <button onClick={() => setActiveTab('agents')} className="text-xs text-primary-600 hover:text-primary-700">View all →</button>
+              <h2 className="text-sm font-semibold text-white">Agent Status</h2>
+              <button onClick={() => setActiveTab('agents')} className="text-xs text-indigo-400 hover:text-indigo-300">View all â†’</button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {agents.slice(0, 4).map((agent) => (
                 <AgentCard key={agent.id} agent={agent} />
               ))}
             </div>
-            {agents.length === 0 && <div className="text-center py-8 text-gray-500 text-sm">No agents yet</div>}
+            {agents.length === 0 && <div className="text-center py-8 text-white/50 text-sm">No agents yet</div>}
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">
+              <h2 className="text-sm font-semibold text-white">
                 Attention Needed
                 {inboxCounts && inboxCounts.total > 0 && (
-                  <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">{inboxCounts.total}</span>
+                  <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-300 rounded-full">{inboxCounts.total}</span>
                 )}
               </h2>
-              <button onClick={() => setActiveTab('inbox')} className="text-xs text-primary-600 hover:text-primary-700">View all →</button>
+              <button onClick={() => setActiveTab('inbox')} className="text-xs text-indigo-400 hover:text-indigo-300">View all â†’</button>
             </div>
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {inbox.slice(0, 6).map((item, i) => (
-                <div key={`${item.type}-${item.id}-${i}`} className={`border-l-4 ${PRIORITY_CONFIG[item.priority]?.border || 'border-l-gray-300'} bg-white rounded-r-lg px-4 py-3 hover:bg-gray-50 transition-colors`}>
+                <div key={`${item.type}-${item.id}-${i}`} className={`border-l-4 ${PRIORITY_CONFIG[item.priority]?.border || 'border-l-white/20'} bg-white/[0.03] rounded-r-lg px-4 py-3 hover:bg-white/10 transition-colors`}>
                   <div className="flex items-start gap-2">
-                    <span className="text-sm mt-0.5">{INBOX_TYPE_CONFIG[item.type]?.icon || '📬'}</span>
+                    <span className="text-sm mt-0.5">{INBOX_TYPE_CONFIG[item.type]?.icon || 'ðŸ“¬'}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{item.title}</div>
-                      <div className="text-xs text-gray-500 truncate mt-0.5">{item.message}</div>
+                      <div className="text-sm font-medium text-white truncate">{item.title}</div>
+                      <div className="text-xs text-white/50 truncate mt-0.5">{item.message}</div>
                     </div>
                   </div>
                 </div>
               ))}
-              {inbox.length === 0 && <div className="text-center py-8 text-gray-500 text-sm">All clear!</div>}
+              {inbox.length === 0 && <div className="text-center py-8 text-white/50 text-sm">All clear!</div>}
             </div>
           </div>
         </div>
@@ -462,11 +462,11 @@ export default function CEOPage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="flex gap-2">
-                <span className="text-sm text-gray-500 py-1.5">Type:</span>
+                <span className="text-sm text-white/50 py-1.5">Type:</span>
                 {Object.entries(INBOX_TYPE_CONFIG).map(([key, config]) => (
                   <button key={key} onClick={() => setInboxTypeFilter(inboxTypeFilter === key ? null : key)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                      inboxTypeFilter === key ? `${config.color}` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      inboxTypeFilter === key ? `${config.color}` : 'bg-white/10 text-white/70 hover:bg-white/15'
                     }`}>
                     {config.icon} {config.label}
                   </button>
@@ -475,18 +475,18 @@ export default function CEOPage() {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex gap-2">
-                <span className="text-sm text-gray-500 py-1.5">Priority:</span>
+                <span className="text-sm text-white/50 py-1.5">Priority:</span>
                 {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
                   <button key={key} onClick={() => setInboxPriorityFilter(inboxPriorityFilter === key ? null : key)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                      inboxPriorityFilter === key ? `${config.color}` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      inboxPriorityFilter === key ? `${config.color}` : 'bg-white/10 text-white/70 hover:bg-white/15'
                     }`}>
                     {config.label}
                   </button>
                 ))}
               </div>
               <button onClick={handleMarkAllRead}
-                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                className="px-3 py-1.5 text-xs font-medium text-white/70 bg-white/10 rounded-lg hover:bg-white/15 transition-colors">
                 Mark All Read
               </button>
             </div>
@@ -495,29 +495,29 @@ export default function CEOPage() {
           {inboxCounts && (
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
               <button onClick={() => setInboxTypeFilter(null)}
-                className={`p-3 rounded-xl border text-left transition-colors ${!inboxTypeFilter ? 'bg-primary-50 border-primary-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
-                <div className="text-lg font-bold text-gray-900">{inboxCounts.total}</div>
-                <div className="text-xs text-gray-500">All Items</div>
+                className={`p-3 rounded-xl border text-left transition-colors ${!inboxTypeFilter ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white border-white/10 hover:border-white/20'}`}>
+                <div className="text-lg font-bold text-white">{inboxCounts.total}</div>
+                <div className="text-xs text-white/50">All Items</div>
               </button>
               <button onClick={() => setInboxTypeFilter(inboxTypeFilter === 'approval' ? null : 'approval')}
-                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'approval' ? 'bg-purple-50 border-purple-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'approval' ? 'bg-purple-500/10 border-purple-500/25' : 'bg-white border-white/10 hover:border-white/20'}`}>
                 <div className="text-lg font-bold text-purple-600">{inboxCounts.pending_approvals}</div>
-                <div className="text-xs text-gray-500">Approvals</div>
+                <div className="text-xs text-white/50">Approvals</div>
               </button>
               <button onClick={() => setInboxTypeFilter(inboxTypeFilter === 'agent_error' ? null : 'agent_error')}
-                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'agent_error' ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'agent_error' ? 'bg-red-500/10 border-red-500/25' : 'bg-white border-white/10 hover:border-white/20'}`}>
                 <div className="text-lg font-bold text-red-600">{inboxCounts.error_agents}</div>
-                <div className="text-xs text-gray-500">Agent Errors</div>
+                <div className="text-xs text-white/50">Agent Errors</div>
               </button>
               <button onClick={() => setInboxTypeFilter(inboxTypeFilter === 'failed_task' ? null : 'failed_task')}
-                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'failed_task' ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'failed_task' ? 'bg-red-500/10 border-red-500/25' : 'bg-white border-white/10 hover:border-white/20'}`}>
                 <div className="text-lg font-bold text-red-600">{inboxCounts.failed_tasks}</div>
-                <div className="text-xs text-gray-500">Failed Tasks</div>
+                <div className="text-xs text-white/50">Failed Tasks</div>
               </button>
               <button onClick={() => setInboxTypeFilter(inboxTypeFilter === 'system_alert' ? null : 'system_alert')}
-                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'system_alert' ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                className={`p-3 rounded-xl border text-left transition-colors ${inboxTypeFilter === 'system_alert' ? 'bg-amber-500/10 border-amber-500/25' : 'bg-white border-white/10 hover:border-white/20'}`}>
                 <div className="text-lg font-bold text-amber-600">{inboxCounts.system_alerts}</div>
-                <div className="text-xs text-gray-500">System Alerts</div>
+                <div className="text-xs text-white/50">System Alerts</div>
               </button>
             </div>
           )}
@@ -536,9 +536,9 @@ export default function CEOPage() {
 
           {inbox.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-4xl mb-3">✅</div>
-              <p className="text-gray-500 text-lg font-medium">All clear!</p>
-              <p className="text-gray-400 text-sm mt-1">No items match your filters</p>
+              <div className="text-4xl mb-3">âœ…</div>
+              <p className="text-white/50 text-lg font-medium">All clear!</p>
+              <p className="text-white/40 text-sm mt-1">No items match your filters</p>
             </div>
           )}
         </div>
@@ -550,76 +550,76 @@ export default function CEOPage() {
           {agents.map((agent) => (
             <AgentCard key={agent.id} agent={agent} />
           ))}
-          {agents.length === 0 && <div className="col-span-full text-center py-12 text-gray-500">No agents</div>}
+          {agents.length === 0 && <div className="col-span-full text-center py-12 text-white/50">No agents</div>}
         </div>
       )}
 
       {/* Activity Tab */}
       {activeTab === 'activity' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="divide-y divide-gray-100">
+        <div className="bg-white/[0.03] rounded-xl border border-white/10 p-5">
+          <h2 className="text-sm font-semibold text-white mb-4">Recent Activity</h2>
+          <div className="divide-y divide-white/6">
             {activity.map((item) => (
               <ActivityItem key={item.id} activity={item} />
             ))}
           </div>
-          {activity.length === 0 && <div className="text-center py-8 text-gray-500 text-sm">No activity yet</div>}
+          {activity.length === 0 && <div className="text-center py-8 text-white/50 text-sm">No activity yet</div>}
         </div>
       )}
 
       {/* Performance Tab */}
       {activeTab === 'performance' && performance && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Overall Performance</h2>
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-5">
+            <h2 className="text-sm font-semibold text-white mb-4">Overall Performance</h2>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{performance.overall.total_tasks}</div>
-                <div className="text-xs text-gray-500">Total Tasks</div>
+                <div className="text-2xl font-bold text-white">{performance.overall.total_tasks}</div>
+                <div className="text-xs text-white/50">Total Tasks</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{performance.overall.completed}</div>
-                <div className="text-xs text-gray-500">Completed</div>
+                <div className="text-xs text-white/50">Completed</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600">{performance.overall.failed}</div>
-                <div className="text-xs text-gray-500">Failed</div>
+                <div className="text-xs text-white/50">Failed</div>
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-white/[0.04] rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Success Rate</span>
+                <span className="text-sm font-medium text-white/80">Success Rate</span>
                 <span className="text-lg font-bold text-emerald-600">{performance.overall.success_rate}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-white/10 rounded-full h-3">
                 <div className="bg-emerald-500 h-3 rounded-full transition-all" style={{ width: `${performance.overall.success_rate}%` }} />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Agent Performance</h2>
+          <div className="bg-white/[0.03] rounded-xl border border-white/10 p-5">
+            <h2 className="text-sm font-semibold text-white mb-4">Agent Performance</h2>
             <div className="space-y-3">
               {performance.by_agent.slice(0, 8).map((agent) => (
                 <div key={agent.agent_id} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-xs font-medium text-primary-700 shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs font-medium text-indigo-300 shrink-0">
                     {agent.agent_name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 truncate">{agent.agent_name}</span>
-                      <span className="text-xs text-gray-500">{agent.success_rate}%</span>
+                      <span className="text-sm font-medium text-white truncate">{agent.agent_name}</span>
+                      <span className="text-xs text-white/50">{agent.success_rate}%</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                        <div className="bg-primary-500 h-1.5 rounded-full" style={{ width: `${agent.success_rate}%` }} />
+                      <div className="flex-1 bg-white/10 rounded-full h-1.5">
+                        <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${agent.success_rate}%` }} />
                       </div>
-                      <span className="text-[11px] text-gray-400">{agent.completed}/{agent.total_tasks}</span>
+                      <span className="text-[11px] text-white/40">{agent.completed}/{agent.total_tasks}</span>
                     </div>
                   </div>
                 </div>
               ))}
-              {performance.by_agent.length === 0 && <div className="text-center py-4 text-gray-500 text-sm">No agent data</div>}
+              {performance.by_agent.length === 0 && <div className="text-center py-4 text-white/50 text-sm">No agent data</div>}
             </div>
           </div>
         </div>

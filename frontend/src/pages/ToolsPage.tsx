@@ -1,49 +1,49 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import type { AgentTool, ToolAction, ToolWithActions } from '../types'
 import { officeService } from '../services/office'
 
 const TOOL_CATEGORIES: Record<string, { label: string; icon: string; color: string }> = {
-  email: { label: 'Email', icon: '✉', color: 'bg-red-100 text-red-700' },
-  communication: { label: 'Communication', icon: '💬', color: 'bg-blue-100 text-blue-700' },
-  crm: { label: 'CRM', icon: '👥', color: 'bg-amber-100 text-amber-700' },
-  sales: { label: 'Sales', icon: '💰', color: 'bg-green-100 text-green-700' },
-  content: { label: 'Content', icon: '📝', color: 'bg-purple-100 text-purple-700' },
-  analytics: { label: 'Analytics', icon: '📊', color: 'bg-indigo-100 text-indigo-700' },
-  productivity: { label: 'Productivity', icon: '⚡', color: 'bg-yellow-100 text-yellow-700' },
-  knowledge: { label: 'Knowledge', icon: '📚', color: 'bg-teal-100 text-teal-700' },
-  support: { label: 'Support', icon: '🎧', color: 'bg-orange-100 text-orange-700' },
-  research: { label: 'Research', icon: '🔍', color: 'bg-cyan-100 text-cyan-700' },
-  social: { label: 'Social', icon: '🌐', color: 'bg-pink-100 text-pink-700' },
-  calendar: { label: 'Calendar', icon: '📅', color: 'bg-blue-100 text-blue-700' },
-  finance: { label: 'Finance', icon: '💳', color: 'bg-emerald-100 text-emerald-700' },
-  data: { label: 'Data', icon: '🗄', color: 'bg-violet-100 text-violet-700' },
-  general: { label: 'General', icon: '⚙', color: 'bg-gray-100 text-gray-700' },
+  email: { label: 'Email', icon: 'âœ‰', color: 'bg-red-500/15 text-red-300' },
+  communication: { label: 'Communication', icon: 'ðŸ’¬', color: 'bg-blue-500/15 text-blue-300' },
+  crm: { label: 'CRM', icon: 'ðŸ‘¥', color: 'bg-amber-500/15 text-amber-300' },
+  sales: { label: 'Sales', icon: 'ðŸ’°', color: 'bg-green-500/15 text-green-300' },
+  content: { label: 'Content', icon: 'ðŸ“', color: 'bg-purple-500/15 text-purple-300' },
+  analytics: { label: 'Analytics', icon: 'ðŸ“Š', color: 'bg-indigo-500/15 text-indigo-300' },
+  productivity: { label: 'Productivity', icon: 'âš¡', color: 'bg-yellow-500/15 text-yellow-300' },
+  knowledge: { label: 'Knowledge', icon: 'ðŸ“š', color: 'bg-teal-500/15 text-teal-300' },
+  support: { label: 'Support', icon: 'ðŸŽ§', color: 'bg-orange-500/15 text-orange-300' },
+  research: { label: 'Research', icon: 'ðŸ”', color: 'bg-cyan-500/15 text-cyan-300' },
+  social: { label: 'Social', icon: 'ðŸŒ', color: 'bg-pink-500/15 text-pink-300' },
+  calendar: { label: 'Calendar', icon: 'ðŸ“…', color: 'bg-blue-500/15 text-blue-300' },
+  finance: { label: 'Finance', icon: 'ðŸ’³', color: 'bg-emerald-500/15 text-emerald-300' },
+  data: { label: 'Data', icon: 'ðŸ—„', color: 'bg-violet-500/15 text-violet-300' },
+  general: { label: 'General', icon: 'âš™', color: 'bg-white/10 text-white/80' },
 }
 
 const RISK_LEVELS: Record<string, { label: string; color: string }> = {
-  low: { label: 'Low', color: 'bg-green-100 text-green-700' },
-  medium: { label: 'Medium', color: 'bg-amber-100 text-amber-700' },
-  high: { label: 'High', color: 'bg-red-100 text-red-700' },
-  critical: { label: 'Critical', color: 'bg-red-200 text-red-800' },
+  low: { label: 'Low', color: 'bg-green-500/15 text-green-300' },
+  medium: { label: 'Medium', color: 'bg-amber-500/15 text-amber-300' },
+  high: { label: 'High', color: 'bg-red-500/15 text-red-300' },
+  critical: { label: 'Critical', color: 'bg-red-500/25 text-red-300' },
 }
 
 function ActionRow({ action }: { action: ToolAction }) {
   const risk = RISK_LEVELS[action.risk_level] || RISK_LEVELS.low
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+    <div className="flex items-center justify-between py-2 px-3 bg-white/[0.04] rounded-lg">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-gray-900">{action.display_name}</span>
+        <span className="text-sm font-medium text-white">{action.display_name}</span>
         <span className={`px-2 py-0.5 rounded text-xs font-medium ${risk.color}`}>
           {risk.label}
         </span>
         {action.requires_approval && (
-          <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-500/15 text-orange-300">
             Approval Required
           </span>
         )}
       </div>
-      <p className="text-xs text-gray-500 max-w-[200px] truncate">{action.description}</p>
+      <p className="text-xs text-white/50 max-w-[200px] truncate">{action.description}</p>
     </div>
   )
 }
@@ -81,8 +81,8 @@ function ToolCard({ tool, onToggle, isSelected }: {
   }
 
   return (
-    <div className={`bg-white rounded-xl border transition-all ${
-      isSelected ? 'border-primary-300 ring-2 ring-primary-100' : 'border-gray-200'
+    <div className={`bg-white/[0.03] rounded-xl border transition-all ${
+      isSelected ? 'border-indigo-500/40 ring-2 ring-indigo-500/20' : 'border-white/10'
     }`}>
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -91,7 +91,7 @@ function ToolCard({ tool, onToggle, isSelected }: {
               {category.icon}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{tool.display_name}</h3>
+              <h3 className="font-semibold text-white">{tool.display_name}</h3>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${category.color}`}>
                   {category.label}
@@ -100,7 +100,7 @@ function ToolCard({ tool, onToggle, isSelected }: {
                   {risk.label} Risk
                 </span>
                 {tool.requires_approval && (
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-500/15 text-orange-300">
                     Approval
                   </span>
                 )}
@@ -110,7 +110,7 @@ function ToolCard({ tool, onToggle, isSelected }: {
           <button
             onClick={() => onToggle(tool.id)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              isSelected ? 'bg-primary-600' : 'bg-gray-200'
+              isSelected ? 'bg-indigo-600' : 'bg-white/10'
             }`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -119,20 +119,20 @@ function ToolCard({ tool, onToggle, isSelected }: {
           </button>
         </div>
 
-        <p className="text-sm text-gray-600 mb-3">{tool.description}</p>
+        <p className="text-sm text-white/70 mb-3">{tool.description}</p>
 
         {tool.integration_id && (
-          <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+          <div className="flex items-center gap-1 text-xs text-white/50 mb-3">
             <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
             Requires integration connection
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <span className="text-xs text-gray-400">v{tool.version}</span>
+        <div className="flex items-center justify-between pt-3 border-t border-white/6">
+          <span className="text-xs text-white/40">v{tool.version}</span>
           <button
             onClick={handleExpand}
-            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            className="text-sm text-indigo-400 hover:text-indigo-300 font-medium"
           >
             {loading ? 'Loading...' : expanded ? 'Hide Actions' : 'View Actions'}
           </button>
@@ -140,9 +140,9 @@ function ToolCard({ tool, onToggle, isSelected }: {
       </div>
 
       {expanded && toolDetails && (
-        <div className="px-5 pb-5 border-t border-gray-100">
+        <div className="px-5 pb-5 border-t border-white/6">
           <div className="mt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Available Actions</h4>
+            <h4 className="text-sm font-medium text-white/80 mb-3">Available Actions</h4>
             <div className="space-y-2">
               {toolDetails.actions.map((action) => (
                 <ActionRow key={action.id} action={action} />
@@ -152,10 +152,10 @@ function ToolCard({ tool, onToggle, isSelected }: {
 
           {toolDetails.permissions.length > 0 && (
             <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Required Permissions</h4>
+              <h4 className="text-sm font-medium text-white/80 mb-2">Required Permissions</h4>
               <div className="flex flex-wrap gap-1">
                 {toolDetails.permissions.map((tp) => (
-                  <span key={tp.id} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                  <span key={tp.id} className="px-2 py-1 bg-white/10 text-white/70 rounded text-xs">
                     {tp.permission_id}
                   </span>
                 ))}
@@ -224,8 +224,8 @@ export default function ToolsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading tools...</p>
+          <div className="w-8 h-8 border-4 border-white/10 border-t-indigo-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-white/50">Loading tools...</p>
         </div>
       </div>
     )
@@ -235,8 +235,8 @@ export default function ToolsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-2">{error}</p>
-          <button onClick={loadTools} className="text-sm text-primary-600 hover:text-primary-700">
+          <p className="text-red-400 mb-2">{error}</p>
+          <button onClick={loadTools} className="text-sm text-indigo-400 hover:text-indigo-300">
             Try again
           </button>
         </div>
@@ -249,12 +249,12 @@ export default function ToolsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tool Registry</h1>
-            <p className="text-gray-500 mt-1">Manage available tools for AI agents</p>
+            <h1 className="text-2xl font-bold text-white">Tool Registry</h1>
+            <p className="text-white/50 mt-1">Manage available tools for AI agents</p>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-4 text-sm text-white/50">
             <span>{tools.length} tools</span>
-            <span className="w-1 h-1 bg-gray-300 rounded-full" />
+            <span className="w-1 h-1 bg-white/20 rounded-full" />
             <span>{selectedTools.size} selected</span>
           </div>
         </div>
@@ -268,7 +268,7 @@ export default function ToolsPage() {
               placeholder="Search tools..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-4 py-2 border border-white/15 rounded-lg focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50"
             />
           </div>
           <div className="flex gap-2">
@@ -276,8 +276,8 @@ export default function ToolsPage() {
               onClick={() => setSelectedCategory(null)}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                 !selectedCategory
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-indigo-500/20 text-indigo-200'
+                  : 'bg-white/10 text-white/70 hover:bg-white/15'
               }`}
             >
               All
@@ -290,8 +290,8 @@ export default function ToolsPage() {
                   onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                     selectedCategory === cat
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-indigo-500/20 text-indigo-200'
+                      : 'bg-white/10 text-white/70 hover:bg-white/15'
                   }`}
                 >
                   {catInfo.icon} {catInfo.label}
@@ -315,7 +315,7 @@ export default function ToolsPage() {
 
       {filteredTools.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No tools found</p>
+          <p className="text-white/50">No tools found</p>
         </div>
       )}
     </div>

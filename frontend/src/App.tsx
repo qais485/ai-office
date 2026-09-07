@@ -25,9 +25,9 @@ import { useAuthStore } from './stores/useAuthStore'
 function NotFoundPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-      <h1 className="text-4xl font-bold text-gray-900">404</h1>
-      <p className="mt-2 text-sm text-gray-500">Page not found.</p>
-      <Link to="/" className="mt-4 inline-block text-sm font-medium text-primary-600 hover:text-primary-700">
+      <h1 className="text-4xl font-bold text-white">404</h1>
+      <p className="mt-2 text-sm text-white/50">Page not found.</p>
+      <Link to="/" className="mt-4 inline-block text-sm font-medium text-indigo-400 hover:text-indigo-300">
         Go home
       </Link>
     </div>
