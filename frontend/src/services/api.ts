@@ -1,6 +1,5 @@
 import type { ApiResponse } from '../types'
-
-const API_BASE_URL = '/api/v1/'
+import { API_BASE_URL } from '../lib/apiConfig'
 
 class ApiService {
   private getToken(): string | null {

@@ -2,6 +2,8 @@
  * WebSocket client with auto-reconnect, heartbeat pong, and event dispatching.
  */
 
+import { API_WS_BASE_URL } from '../lib/apiConfig'
+
 type MessageHandler = (data: any) => void
 
 interface WSOptions {
@@ -37,28 +39,22 @@ class WebSocketClient {
 
   connect(roomId: string, token?: string): void {
     this.intentionalClose = false
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
     const params = token ? `?token=${encodeURIComponent(token)}` : ''
-    this.url = `${protocol}//${host}/api/v1/ws/${roomId}${params}`
+    this.url = `${API_WS_BASE_URL}/ws/${roomId}${params}`
     this._open()
   }
 
   connectDashboard(token?: string): void {
     this.intentionalClose = false
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
     const params = token ? `?token=${encodeURIComponent(token)}` : ''
-    this.url = `${protocol}//${host}/api/v1/ws/dashboard${params}`
+    this.url = `${API_WS_BASE_URL}/ws/dashboard${params}`
     this._open()
   }
 
   connectUser(userId: string, token?: string): void {
     this.intentionalClose = false
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
     const params = token ? `?token=${encodeURIComponent(token)}` : ''
-    this.url = `${protocol}//${host}/api/v1/ws/user/${userId}${params}`
+    this.url = `${API_WS_BASE_URL}/ws/user/${userId}${params}`
     this._open()
   }
 

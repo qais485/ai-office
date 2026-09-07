@@ -10,8 +10,14 @@ RUN npm run build
 
 FROM nginx:alpine AS runtime
 
+# Origin of the backend API for the nginx proxy below. The official nginx image
+# renders /etc/nginx/templates/*.template with envsubst at container start, so
+# this can be overridden per environment (e.g. docker-compose sets
+# BACKEND_URL=http://backend:8000). No provider URL is hardcoded here.
+ENV BACKEND_URL=http://localhost:8000
+
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 

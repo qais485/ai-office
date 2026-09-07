@@ -58,6 +58,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: ai_office_frontend
+    environment:
+      # Origin of the backend API used by the nginx proxy inside the frontend
+      # container. Defaults to the compose-internal service name; override it
+      # (root .env) when the backend runs elsewhere, e.g. a managed host.
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
     ports:
       - "${FRONTEND_PORT:-80}:80"
     depends_on:
