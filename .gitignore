@@ -19,7 +19,6 @@ venv/
 
 # Node
 node_modules/
-dist/
 build/
 
 # IDE
