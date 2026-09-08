@@ -33,7 +33,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.exc import OperationalError
 
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.models.agent import AIAgent, AgentStatus, LifecycleStatus
 from app.models.integration import Integration
 from app.models.integration_account import IntegrationAccount
@@ -373,8 +373,8 @@ class TestMultipleAccounts:
 
     def test_multiple_gmail_accounts_different_users(self, api_db, gmail_integration):
         """Test 8: Multiple Gmail accounts from different users."""
-        user1 = User(id=uuid4(), email="user1@test.com", name="User 1", role=UserRole.USER, is_active=True)
-        user2 = User(id=uuid4(), email="user2@test.com", name="User 2", role=UserRole.USER, is_active=True)
+        user1 = User(id=uuid4(), email="user1@test.com", name="User 1", role="user", is_active=True)
+        user2 = User(id=uuid4(), email="user2@test.com", name="User 2", role="user", is_active=True)
         api_db.add_all([user1, user2])
         api_db.flush()
 
@@ -402,7 +402,7 @@ class TestMultipleAccounts:
 
         other_user = User(
             id=uuid4(), email="other@test.com", name="Other User",
-            role=UserRole.USER, is_active=True,
+            role="user", is_active=True,
         )
         api_db.add(other_user)
         api_db.flush()

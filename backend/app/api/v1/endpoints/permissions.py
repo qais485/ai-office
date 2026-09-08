@@ -11,8 +11,8 @@ from app.schemas.permission import (
     AgentPermissionWithDetails, PermissionCheckRequest, PermissionCheckResponse
 )
 from app.services.permission_service import PermissionService
-from app.api.deps import require_role, get_current_active_user
-from app.models.user import User, UserRole
+from app.api.deps import get_current_active_user
+from app.models.user import User
 
 import logging
 
@@ -61,7 +61,7 @@ async def get_permission(
 async def create_permission(
     permission: PermissionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = PermissionService(db)
     existing = service.get_permission_by_name(permission.name)
@@ -77,7 +77,7 @@ async def update_permission(
     permission_id: UUID,
     permission: PermissionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = PermissionService(db)
     updated = service.update_permission(permission_id, permission)
@@ -91,7 +91,7 @@ async def update_permission(
 async def delete_permission(
     permission_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = PermissionService(db)
     deleted = service.delete_permission(permission_id)
@@ -116,7 +116,7 @@ async def set_agent_permission(
     agent_id: UUID,
     permission: AgentPermissionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = PermissionService(db)
     result = service.set_agent_permission(agent_id, permission, granted_by="ceo")
@@ -168,7 +168,7 @@ async def delete_agent_permission(
 async def revoke_all_agent_permissions(
     agent_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = PermissionService(db)
     service.revoke_all_agent_permissions(agent_id)

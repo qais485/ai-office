@@ -1,6 +1,27 @@
 import pytest
 from uuid import uuid4
 
+from app.models.agent import AIAgent, AgentStatus, LifecycleStatus
+
+
+@pytest.fixture
+def own_agent(api_db, ceo_user, sample_room):
+    """Agent owned by the authenticated CEO user (integration assignment
+    endpoints enforce agent.user_id == current_user.id)."""
+    agent = AIAgent(
+        id=uuid4(),
+        name="Test Agent",
+        role="assistant",
+        description="A test agent",
+        status=AgentStatus.INACTIVE,
+        lifecycle_status=LifecycleStatus.DRAFT,
+        room_id=sample_room.id,
+        user_id=ceo_user.id,
+    )
+    api_db.add(agent)
+    api_db.flush()
+    return agent
+
 
 class TestIntegrationCRUD:
     def test_create_integration(self, client, ceo_headers):
@@ -101,6 +122,30 @@ class TestIntegrationAccount:
         assert data["display_name"] == "My Account"
         assert data["integration_id"] == str(sample_integration.id)
 
+    def test_connect_bot_token_shape_and_legacy_flat_shape_rejected(self, client, ceo_headers, sample_integration):
+        """Regression (Fix.md): the Telegram **Bot** connect previously posted
+        credentials flat ({bot_token: ...}) and FastAPI answered 422. The
+        contract is {credentials: {...}}; flat bodies must stay rejected so the
+        frontend wrapper never regresses to posting them."""
+        # correct shape → connects
+        ok = client.post(
+            "/api/v1/integrations/accounts/connect",
+            params={"integration_id": str(sample_integration.id)},
+            json={"credentials": {"bot_token": "123456789:AAFakeToken"}},
+            headers=ceo_headers,
+        )
+        assert ok.status_code == 201
+        assert ok.json()["status"] == "connected"
+
+        # legacy flat shape → 422 (validation error), never a silent connect
+        flat = client.post(
+            "/api/v1/integrations/accounts/connect",
+            params={"integration_id": str(sample_integration.id)},
+            json={"bot_token": "123456789:AAFakeToken"},
+            headers=ceo_headers,
+        )
+        assert flat.status_code == 422
+
     def test_list_user_accounts_empty(self, client, ceo_headers):
         response = client.get("/api/v1/integrations/accounts/", headers=ceo_headers)
         assert response.status_code == 200
@@ -173,13 +218,18 @@ class TestIntegrationAccount:
         assert disconnect_resp.status_code == 200
 
         accounts_resp = client.get("/api/v1/integrations/accounts/", headers=ceo_headers)
-        assert len(accounts_resp.json()) == 0
+        # disconnect soft-deletes: keeps the row (status badge in the UI) but
+        # clears credentials — the account stays listed.
+        remaining = accounts_resp.json()
+        assert len(remaining) == 1
+        assert remaining[0]["credentials"] is None
+        assert remaining[0].get("status") == "disconnected"
 
 
 class TestAgentIntegrationAssignment:
-    def test_assign_integration_to_agent(self, client, ceo_headers, sample_agent, sample_integration):
+    def test_assign_integration_to_agent(self, client, ceo_headers, own_agent, sample_integration):
         response = client.post(
-            f"/api/v1/integrations/agent/{sample_agent.id}/assign",
+            f"/api/v1/integrations/agent/{own_agent.id}/assign",
             params={"integration_id": str(sample_integration.id)},
             json=["read", "write"],
             headers=ceo_headers,
@@ -189,16 +239,16 @@ class TestAgentIntegrationAssignment:
         assert data["detail"] == "Integration assigned to agent"
         assert "id" in data
 
-    def test_remove_integration_from_agent(self, client, ceo_headers, sample_agent, sample_integration):
+    def test_remove_integration_from_agent(self, client, ceo_headers, own_agent, sample_integration):
         client.post(
-            f"/api/v1/integrations/agent/{sample_agent.id}/assign",
+            f"/api/v1/integrations/agent/{own_agent.id}/assign",
             params={"integration_id": str(sample_integration.id)},
             json=["read"],
             headers=ceo_headers,
         )
 
         response = client.delete(
-            f"/api/v1/integrations/agent/{sample_agent.id}/remove",
+            f"/api/v1/integrations/agent/{own_agent.id}/remove",
             params={"integration_id": str(sample_integration.id)},
             headers=ceo_headers,
         )
@@ -238,16 +288,16 @@ class TestAgentIntegrationAssignment:
         )
         assert response.status_code == 401
 
-    def test_get_agent_integrations(self, client, ceo_headers, sample_agent, sample_integration):
+    def test_get_agent_integrations(self, client, ceo_headers, own_agent, sample_integration):
         client.post(
-            f"/api/v1/integrations/agent/{sample_agent.id}/assign",
+            f"/api/v1/integrations/agent/{own_agent.id}/assign",
             params={"integration_id": str(sample_integration.id)},
             json=["send_messages"],
             headers=ceo_headers,
         )
 
         response = client.get(
-            f"/api/v1/integrations/agent/{sample_agent.id}",
+            f"/api/v1/integrations/agent/{own_agent.id}",
             headers=ceo_headers,
         )
         assert response.status_code == 200

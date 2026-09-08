@@ -141,6 +141,10 @@ class SchedulerService:
             # Give them up to 10 seconds; they should respect cancellation
             await asyncio.sleep(min(10, len(running) * 2))
 
+        # Clear registrations so a later startup in the same process (tests
+        # boot the lifespan repeatedly) can re-register the same job names.
+        self._jobs.clear()
+
         self._logger.info("Scheduler stopped")
 
     # ------------------------------------------------------------------

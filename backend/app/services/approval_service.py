@@ -45,13 +45,13 @@ class ApprovalService:
         except Exception as e:
             logger.warning("Failed to publish approval event", exc_info=True)
 
-    def get_approvals(self, status: Optional[str] = None, agent_id: Optional[UUID] = None, user_id: Optional[UUID] = None, role: Optional[str] = None) -> List[Approval]:
+    def get_approvals(self, status: Optional[str] = None, agent_id: Optional[UUID] = None, user_id: Optional[UUID] = None) -> List[Approval]:
         query = self.db.query(Approval)
         if status:
             query = query.filter(Approval.status == status)
         if agent_id:
             query = query.filter(Approval.agent_id == agent_id)
-        if user_id is not None and role not in ("ceo", "admin"):
+        if user_id is not None:
             from app.models.agent import AIAgent
             user_agent_ids = [a.id for a in self.db.query(AIAgent.id).filter(AIAgent.user_id == user_id).all()]
             if not user_agent_ids:
@@ -62,16 +62,16 @@ class ApprovalService:
     def get_approval(self, approval_id: UUID) -> Optional[Approval]:
         return self.db.query(Approval).filter(Approval.id == approval_id).first()
 
-    def get_approval_with_agent(self, approval_id: UUID, user_id: Optional[UUID] = None, role: Optional[str] = None) -> Optional[dict]:
+    def get_approval_with_agent(self, approval_id: UUID, user_id: Optional[UUID] = None) -> Optional[dict]:
         from app.models.agent import AIAgent
         from app.models.user import User
-        
+
         approval = self.get_approval(approval_id)
         if not approval:
             return None
-        
-        # Verify user owns the agent if not CEO/Admin
-        if user_id is not None and role not in ("ceo", "admin"):
+
+        # Strict ownership: users only ever see approvals of their own agents
+        if user_id is not None:
             agent = self.db.query(AIAgent).filter(AIAgent.id == approval.agent_id).first()
             if not agent or agent.user_id != user_id:
                 return None
@@ -106,10 +106,10 @@ class ApprovalService:
             "updated_at": approval.updated_at.isoformat() if approval.updated_at else None
         }
 
-    def get_approvals_with_agents(self, status: Optional[str] = None, agent_id: Optional[UUID] = None, risk_level: Optional[str] = None, user_id: Optional[UUID] = None, role: Optional[str] = None) -> List[dict]:
+    def get_approvals_with_agents(self, status: Optional[str] = None, agent_id: Optional[UUID] = None, risk_level: Optional[str] = None, user_id: Optional[UUID] = None) -> List[dict]:
         from app.models.agent import AIAgent
-        
-        approvals = self.get_approvals(status=status, agent_id=agent_id, user_id=user_id, role=role)
+
+        approvals = self.get_approvals(status=status, agent_id=agent_id, user_id=user_id)
         
         if risk_level:
             approvals = [a for a in approvals if a.risk_level == risk_level]
@@ -202,9 +202,20 @@ class ApprovalService:
         
         return approval
 
+    def _ensure_decider_owns_agent(self, approval: Approval, decided_by: UUID) -> bool:
+        """Only the account owning the agent that raised the approval may
+        decide it. Enforced at service level so every caller is covered."""
+        if approval is None:
+            return False
+        from app.models.agent import AIAgent
+        owner_id = self.db.query(AIAgent.user_id).filter(
+            AIAgent.id == approval.agent_id
+        ).scalar()
+        return owner_id == decided_by
+
     def approve(self, approval_id: UUID, decided_by: UUID, notes: Optional[str] = None) -> Optional[Approval]:
         approval = self.get_approval(approval_id)
-        if approval and approval.status == "pending":
+        if approval and approval.status == "pending" and self._ensure_decider_owns_agent(approval, decided_by):
             old_status = approval.status
             approval.status = "approved"
             approval.decided_at = datetime.now(timezone.utc).isoformat()
@@ -238,7 +249,7 @@ class ApprovalService:
 
     def reject(self, approval_id: UUID, decided_by: UUID, notes: Optional[str] = None) -> Optional[Approval]:
         approval = self.get_approval(approval_id)
-        if approval and approval.status == "pending":
+        if approval and approval.status == "pending" and self._ensure_decider_owns_agent(approval, decided_by):
             old_status = approval.status
             approval.status = "rejected"
             approval.decided_at = datetime.now(timezone.utc).isoformat()
@@ -354,9 +365,9 @@ class ApprovalService:
     def get_pending_count(self) -> int:
         return self.db.query(Approval).filter(Approval.status == "pending").count()
 
-    def get_stats(self, user_id: Optional[UUID] = None, role: Optional[str] = None) -> dict:
+    def get_stats(self, user_id: Optional[UUID] = None) -> dict:
         from app.models.agent import AIAgent
-        if user_id is not None and role not in ("ceo", "admin"):
+        if user_id is not None:
             user_agent_ids = [a.id for a in self.db.query(AIAgent.id).filter(AIAgent.user_id == user_id).all()]
             if not user_agent_ids:
                 return {"pending": 0, "approved": 0, "rejected": 0, "expired": 0, "cancelled": 0, "total": 0}

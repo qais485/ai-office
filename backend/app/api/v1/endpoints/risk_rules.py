@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.schemas.risk_rule import RiskRuleCreate, RiskRuleUpdate, RiskRuleResponse, RiskEvaluationRequest, RiskEvaluationResponse
 from app.services.risk_rule_service import RiskRuleService, RiskEvaluationService
-from app.api.deps import require_role
-from app.models.user import User, UserRole
+from app.api.deps import get_current_active_user
+from app.models.user import User
 
 import logging
 
@@ -21,7 +21,7 @@ router = APIRouter()
 async def get_risk_rules(
     active_only: bool = True,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = RiskRuleService(db)
     rules = service.get_risk_rules(active_only=active_only)
@@ -32,7 +32,7 @@ async def get_risk_rules(
 @router.get("/summary")
 async def get_risk_summary(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = RiskEvaluationService(db)
     return service.get_risk_summary()
@@ -42,7 +42,7 @@ async def get_risk_summary(
 async def get_risk_rule(
     rule_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = RiskRuleService(db)
     rule = service.get_risk_rule(rule_id)
@@ -56,7 +56,7 @@ async def get_risk_rule(
 async def create_risk_rule(
     rule: RiskRuleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = RiskRuleService(db)
     created = service.create_risk_rule(rule)
@@ -69,7 +69,7 @@ async def update_risk_rule(
     rule_id: UUID,
     rule: RiskRuleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = RiskRuleService(db)
     updated = service.update_risk_rule(rule_id, rule)
@@ -83,7 +83,7 @@ async def update_risk_rule(
 async def delete_risk_rule(
     rule_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = RiskRuleService(db)
     if not service.delete_risk_rule(rule_id):
@@ -96,7 +96,7 @@ async def delete_risk_rule(
 async def evaluate_risk(
     request: RiskEvaluationRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = RiskEvaluationService(db)
     risk_level, requires_approval, rule_id, rule_name, reason = service.evaluate_risk(

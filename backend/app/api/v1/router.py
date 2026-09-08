@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
-    health, auth, users, agents, rooms, tasks, dashboard, emails, activity, email_accounts,
+    health, auth, agents, rooms, tasks, dashboard, emails, activity, email_accounts,
     templates, integrations, tools, permissions, approvals, knowledge, notifications, audit,
     hiring, tool_execution, ceo_dashboard, ceo_inbox, agent_collaboration, websocket, analytics,
     risk_rules, agent_runtime, triggers, gmail_monitor, gmail_push
@@ -11,7 +11,6 @@ api_router = APIRouter()
 
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(agents.router, prefix="/agents", tags=["agents"])
 api_router.include_router(rooms.router, prefix="/rooms", tags=["rooms"])
 api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])

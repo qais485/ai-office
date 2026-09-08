@@ -57,7 +57,7 @@ async def execute_tool(request: ExecuteToolRequest, db: Session = Depends(get_db
 @router.get("/pending-approvals")
 async def get_pending_approvals(limit: int = 50, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     service = ToolExecutionService(db)
-    approvals = service.get_pending_approvals(limit=limit)
+    approvals = service.get_pending_approvals(limit=limit, user_id=current_user.id)
     return [
         {
             "id": str(a.id),
@@ -77,7 +77,7 @@ async def get_pending_approvals(limit: int = 50, db: Session = Depends(get_db), 
 @router.get("/approval-stats")
 async def get_approval_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     service = ToolExecutionService(db)
-    return service.get_approval_stats()
+    return service.get_approval_stats(user_id=current_user.id)
 
 
 @router.post("/{approval_id}/approve")

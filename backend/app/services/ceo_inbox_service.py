@@ -21,17 +21,17 @@ class CEOInboxService:
         items: List[Dict[str, Any]] = []
 
         if filter_type is None or filter_type == "approval":
-            items.extend(self._get_pending_approvals())
+            items.extend(self._get_pending_approvals(user_id))
         if filter_type is None or filter_type == "agent_error":
-            items.extend(self._get_error_agents())
+            items.extend(self._get_error_agents(user_id))
         if filter_type is None or filter_type == "failed_task":
-            items.extend(self._get_failed_tasks())
+            items.extend(self._get_failed_tasks(user_id))
         if filter_type is None or filter_type == "pending_task":
-            items.extend(self._get_high_priority_pending_tasks())
+            items.extend(self._get_high_priority_pending_tasks(user_id))
         if filter_type is None or filter_type == "notification":
             items.extend(self._get_notifications(user_id, unread_only))
         if filter_type is None or filter_type == "system":
-            items.extend(self._get_system_alerts())
+            items.extend(self._get_system_alerts(user_id))
 
         items.sort(key=lambda x: (
             {"critical": 0, "high": 1, "medium": 2, "low": 3}.get(x.get("priority", "low"), 3),
@@ -42,16 +42,20 @@ class CEOInboxService:
 
         return items
 
-    def _get_pending_approvals(self) -> List[Dict[str, Any]]:
-        from app.models.agent import AIAgent as Agent
+    def _owner_filter(self, query, model, user_id: UUID):
+        """Scope a query so only records of agents owned by `user_id` pass."""
+        return query.join(AIAgent, model.agent_id == AIAgent.id).filter(AIAgent.user_id == user_id)
 
-        approvals = self.db.query(Approval).filter(
+    def _get_pending_approvals(self, user_id: UUID) -> List[Dict[str, Any]]:
+        approvals = self._owner_filter(
+            self.db.query(Approval), Approval, user_id
+        ).filter(
             Approval.status == "pending"
         ).order_by(Approval.created_at.desc()).limit(15).all()
 
         items = []
         for approval in approvals:
-            agent = self.db.query(Agent).filter(Agent.id == approval.agent_id).first()
+            agent = self.db.query(AIAgent).filter(AIAgent.id == approval.agent_id).first()
 
             expires_soon = False
             if approval.expires_at:
@@ -87,8 +91,9 @@ class CEOInboxService:
 
         return items
 
-    def _get_error_agents(self) -> List[Dict[str, Any]]:
+    def _get_error_agents(self, user_id: UUID) -> List[Dict[str, Any]]:
         error_agents = self.db.query(AIAgent).filter(
+            AIAgent.user_id == user_id,
             AIAgent.lifecycle_status == LifecycleStatus.ERROR
         ).all()
 
@@ -110,8 +115,8 @@ class CEOInboxService:
 
         return items
 
-    def _get_failed_tasks(self) -> List[Dict[str, Any]]:
-        failed_tasks = self.db.query(Task).filter(
+    def _get_failed_tasks(self, user_id: UUID) -> List[Dict[str, Any]]:
+        failed_tasks = self._owner_filter(self.db.query(Task), Task, user_id).filter(
             Task.status == TaskStatus.FAILED
         ).order_by(Task.created_at.desc()).limit(10).all()
 
@@ -133,8 +138,8 @@ class CEOInboxService:
 
         return items
 
-    def _get_high_priority_pending_tasks(self) -> List[Dict[str, Any]]:
-        high_priority_tasks = self.db.query(Task).filter(
+    def _get_high_priority_pending_tasks(self, user_id: UUID) -> List[Dict[str, Any]]:
+        high_priority_tasks = self._owner_filter(self.db.query(Task), Task, user_id).filter(
             Task.status == TaskStatus.PENDING,
             Task.priority.in_(["high", "urgent"])
         ).order_by(Task.created_at.desc()).limit(10).all()
@@ -191,11 +196,13 @@ class CEOInboxService:
 
         return items
 
-    def _get_system_alerts(self) -> List[Dict[str, Any]]:
+    def _get_system_alerts(self, user_id: UUID) -> List[Dict[str, Any]]:
         alerts: List[Dict[str, Any]] = []
 
-        total_agents = self.db.query(AIAgent).count()
+        # All alerts are computed strictly over the requesting account's data.
+        total_agents = self.db.query(AIAgent).filter(AIAgent.user_id == user_id).count()
         active_agents = self.db.query(AIAgent).filter(
+            AIAgent.user_id == user_id,
             AIAgent.status.in_(["active", "busy"])
         ).count()
         if total_agents > 0 and active_agents == 0 and total_agents > 2:
@@ -209,7 +216,9 @@ class CEOInboxService:
                 "priority": "critical",
             })
 
-        running_tasks = self.db.query(Task).filter(Task.status == TaskStatus.RUNNING).count()
+        running_tasks = self._owner_filter(self.db.query(Task), Task, user_id).filter(
+            Task.status == TaskStatus.RUNNING
+        ).count()
         if running_tasks > 20:
             alerts.append({
                 "type": "system_alert",
@@ -221,8 +230,10 @@ class CEOInboxService:
                 "priority": "medium",
             })
 
-        total_tasks = self.db.query(Task).count()
-        failed_tasks = self.db.query(Task).filter(Task.status == TaskStatus.FAILED).count()
+        total_tasks = self._owner_filter(self.db.query(Task), Task, user_id).count()
+        failed_tasks = self._owner_filter(self.db.query(Task), Task, user_id).filter(
+            Task.status == TaskStatus.FAILED
+        ).count()
         if total_tasks > 0 and failed_tasks > 0:
             fail_rate = (failed_tasks / total_tasks) * 100
             if fail_rate > 30:
@@ -236,7 +247,9 @@ class CEOInboxService:
                     "priority": "high",
                 })
 
-        pending_approvals = self.db.query(Approval).filter(Approval.status == "pending").count()
+        pending_approvals = self._owner_filter(self.db.query(Approval), Approval, user_id).filter(
+            Approval.status == "pending"
+        ).count()
         if pending_approvals > 10:
             alerts.append({
                 "type": "system_alert",
@@ -251,9 +264,16 @@ class CEOInboxService:
         return alerts
 
     def get_inbox_counts(self, user_id: UUID) -> Dict[str, int]:
-        pending_approvals = self.db.query(Approval).filter(Approval.status == "pending").count()
-        error_agents = self.db.query(AIAgent).filter(AIAgent.lifecycle_status == LifecycleStatus.ERROR).count()
-        failed_tasks = self.db.query(Task).filter(Task.status == TaskStatus.FAILED).count()
+        pending_approvals = self._owner_filter(self.db.query(Approval), Approval, user_id).filter(
+            Approval.status == "pending"
+        ).count()
+        error_agents = self.db.query(AIAgent).filter(
+            AIAgent.user_id == user_id,
+            AIAgent.lifecycle_status == LifecycleStatus.ERROR
+        ).count()
+        failed_tasks = self._owner_filter(self.db.query(Task), Task, user_id).filter(
+            Task.status == TaskStatus.FAILED
+        ).count()
         unread_notifications = self.db.query(Notification).filter(
             Notification.user_id == user_id,
             Notification.is_read == False,

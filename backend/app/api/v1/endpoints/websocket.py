@@ -71,8 +71,11 @@ async def dashboard_websocket(websocket: WebSocket, token: Optional[str] = None)
         await websocket.close(code=4001, reason="Authentication required")
         return
 
-    await manager.connect(websocket, user_id=user_id, room_id="ceo-dashboard")
-    logger.info("WebSocket connected: user=%s room=%s", user_id, "ceo-dashboard")
+    # Per-account room: dashboard events are delivered via
+    # send_personal_message to the owning user only — never to a shared feed.
+    room_id = f"dashboard:{user_id}"
+    await manager.connect(websocket, user_id=user_id, room_id=room_id)
+    logger.info("WebSocket connected: user=%s room=%s", user_id, room_id)
 
     try:
         while True:
@@ -90,14 +93,14 @@ async def dashboard_websocket(websocket: WebSocket, token: Optional[str] = None)
             except (json.JSONDecodeError, AttributeError) as e:
                 logger.debug("Malformed WebSocket message: %s", e)
 
-            message = {"type": "message", "data": data, "room_id": "ceo-dashboard", "user_id": str(user_id)}
-            await manager.broadcast_to_room("ceo-dashboard", message)
+            message = {"type": "message", "data": data, "room_id": room_id, "user_id": str(user_id)}
+            await manager.broadcast_to_room(room_id, message)
     except WebSocketDisconnect:
-        logger.info("WebSocket disconnected: user=%s room=%s", user_id, "ceo-dashboard")
-        manager.disconnect(websocket, user_id=user_id, room_id="ceo-dashboard")
+        logger.info("WebSocket disconnected: user=%s room=%s", user_id, room_id)
+        manager.disconnect(websocket, user_id=user_id, room_id=room_id)
     except Exception as e:
         logger.error("WebSocket error in dashboard endpoint: %s", e, exc_info=True)
-        manager.disconnect(websocket, user_id=user_id, room_id="ceo-dashboard")
+        manager.disconnect(websocket, user_id=user_id, room_id=room_id)
 
 
 @router.websocket("/ws/user/{user_id_str}")

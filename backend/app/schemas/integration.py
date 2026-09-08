@@ -59,6 +59,20 @@ class ConnectRequest(BaseModel):
     config: Optional[dict] = None
 
 
+class TelegramLoginStartRequest(BaseModel):
+    api_id: str
+    api_hash: str
+    phone: str
+
+
+class TelegramLoginCodeRequest(BaseModel):
+    code: str
+
+
+class TelegramLoginPasswordRequest(BaseModel):
+    password: str
+
+
 class OAuth2AuthorizeResponse(BaseModel):
     authorization_url: str
     state: str

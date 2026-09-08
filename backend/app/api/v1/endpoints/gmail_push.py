@@ -186,17 +186,12 @@ async def setup_all_gmail_watches(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    """Set up or renew Gmail push notifications for all active accounts.
-
-    Only CEO/Admin users can manage watches for all accounts.
-    """
+    """Set up or renew Gmail push notifications for the requesting account's
+    active Gmail connections."""
     from app.services.gmail_push_service import GmailPushService
 
-    if current_user.role not in ("ceo", "admin"):
-        raise HTTPException(status_code=403, detail="CEO or Admin role required")
-
     push_service = GmailPushService(db)
-    results = push_service.setup_all_watches()
+    results = push_service.setup_all_watches(user_id=current_user.id)
 
     return {
         "success": True,

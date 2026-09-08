@@ -17,7 +17,9 @@ class TelegramProvider(IntegrationProvider):
         return "telegram"
 
     async def execute_action(self, action: str, parameters: Dict[str, Any], access_token: Optional[str] = None, credentials: Optional[Dict[str, Any]] = None) -> ProviderResult:
-        bot_token = (credentials or {}).get("bot_token") or access_token
+        # Fall back to "api_key" for accounts connected before the Bot/Account
+        # split, when the frontend stored the bot token under that key.
+        bot_token = (credentials or {}).get("bot_token") or (credentials or {}).get("api_key") or access_token
         if not bot_token:
             return ProviderResult(success=False, error="No bot token provided")
         handlers = {
@@ -65,7 +67,7 @@ class TelegramProvider(IntegrationProvider):
         return ProviderResult(success=True, data={"messages": messages})
 
     async def test_connection(self, access_token=None, credentials=None) -> ProviderResult:
-        bot_token = (credentials or {}).get("bot_token") or access_token
+        bot_token = (credentials or {}).get("bot_token") or (credentials or {}).get("api_key") or access_token
         if not bot_token:
             return ProviderResult(success=False, error="No bot token")
         try:

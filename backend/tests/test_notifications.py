@@ -337,14 +337,14 @@ class TestNotificationDelete:
 
 class TestNotificationUserFilter:
     def test_users_only_see_own_notifications(self, db, regular_user, api_db):
-        from app.models.user import User, UserRole
+        from app.models.user import User
         from app.utils.security import create_access_token
 
         other_user = User(
             id=uuid4(),
             email="other@test.com",
             name="Other User",
-            role=UserRole.USER,
+            role="user",
             is_active=True,
         )
         api_db.add(other_user)
@@ -392,14 +392,14 @@ class TestNotificationUserFilter:
         assert str(other_notif.id) not in my_ids
 
     def test_other_user_sees_only_own(self, db, regular_user, api_db):
-        from app.models.user import User, UserRole
+        from app.models.user import User
         from app.utils.security import create_access_token
 
         other_user = User(
             id=uuid4(),
             email="second@test.com",
             name="Second User",
-            role=UserRole.USER,
+            role="user",
             is_active=True,
         )
         api_db.add(other_user)
@@ -447,14 +447,14 @@ class TestNotificationUserFilter:
         assert str(my_notif.id) not in other_ids
 
     def test_unread_count_per_user(self, db, regular_user, api_db):
-        from app.models.user import User, UserRole
+        from app.models.user import User
         from app.utils.security import create_access_token
 
         other_user = User(
             id=uuid4(),
             email="count_user@test.com",
             name="Count User",
-            role=UserRole.USER,
+            role="user",
             is_active=True,
         )
         api_db.add(other_user)
@@ -499,14 +499,14 @@ class TestNotificationUserFilter:
         assert my_count.json()["count"] == 3
 
     def test_mark_read_does_not_affect_other_user(self, db, regular_user, api_db):
-        from app.models.user import User, UserRole
+        from app.models.user import User
         from app.utils.security import create_access_token
 
         other_user = User(
             id=uuid4(),
             email="isolation@test.com",
             name="Isolation User",
-            role=UserRole.USER,
+            role="user",
             is_active=True,
         )
         api_db.add(other_user)
@@ -560,13 +560,13 @@ class TestNotificationUserFilter:
 
     def test_notification_service_user_filter(self, db, regular_user, api_db):
         from app.services.notification_service import NotificationService
-        from app.models.user import User, UserRole
+        from app.models.user import User
 
         other_user = User(
             id=uuid4(),
             email="svc_filter@test.com",
             name="Service Filter User",
-            role=UserRole.USER,
+            role="user",
             is_active=True,
         )
         api_db.add(other_user)

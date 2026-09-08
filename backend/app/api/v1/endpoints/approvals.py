@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.schemas.approval import ApprovalCreate, ApprovalResponse
 from app.services.approval_service import ApprovalService
-from app.api.deps import get_current_active_user, require_role
-from app.models.user import User, UserRole
+from app.api.deps import get_current_active_user
+from app.models.user import User
 
 import logging
 
@@ -26,7 +26,7 @@ def get_approvals(
     current_user: User = Depends(get_current_active_user)
 ):
     service = ApprovalService(db)
-    results = service.get_approvals_with_agents(status=status, agent_id=agent_id, risk_level=risk_level, user_id=current_user.id, role=current_user.role)
+    results = service.get_approvals_with_agents(status=status, agent_id=agent_id, risk_level=risk_level, user_id=current_user.id)
     logger.debug("Listed %d approvals for user %s", len(results), current_user.id)
     return results
 
@@ -37,7 +37,7 @@ def get_approval_stats(
     current_user: User = Depends(get_current_active_user)
 ):
     service = ApprovalService(db)
-    return service.get_stats(user_id=current_user.id, role=current_user.role)
+    return service.get_stats(user_id=current_user.id)
 
 
 @router.get("/{approval_id}", response_model=dict)
@@ -47,7 +47,7 @@ def get_approval(
     current_user: User = Depends(get_current_active_user)
 ):
     service = ApprovalService(db)
-    approval = service.get_approval_with_agent(approval_id, user_id=current_user.id, role=current_user.role)
+    approval = service.get_approval_with_agent(approval_id, user_id=current_user.id)
     if not approval:
         raise HTTPException(status_code=404, detail="Approval not found")
     logger.debug("Retrieved approval %s for user %s", approval_id, current_user.id)
@@ -73,10 +73,7 @@ def create_approval(
 
 
 def _ensure_can_decide(db: Session, user: User, approval) -> None:
-    """CEO/Admin may decide any approval; the owning user may decide
-    approvals raised by their own agents."""
-    if user.role in (UserRole.CEO, UserRole.ADMIN):
-        return
+    """Only the owner of the agent that raised the approval may decide it."""
     from app.models.agent import AIAgent
 
     agent = db.query(AIAgent).filter(AIAgent.id == approval.agent_id).first()
@@ -84,7 +81,7 @@ def _ensure_can_decide(db: Session, user: User, approval) -> None:
         return
     raise HTTPException(
         status_code=403,
-        detail=f"Role '{user.role.value}' is not authorized to decide this approval",
+        detail="Only the owner of this agent can decide this approval",
     )
 
 

@@ -8,7 +8,7 @@ from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone, timedelta
 
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.models.agent import AIAgent, AgentStatus, LifecycleStatus
 from app.models.integration import Integration
 from app.models.integration_account import IntegrationAccount

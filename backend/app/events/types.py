@@ -29,6 +29,12 @@ class EventType(str, enum.Enum):
     # Email events
     EMAIL_RECEIVED = "email_received"
 
+    # Telegram (MTProto account) events
+    TELEGRAM_MESSAGE_RECEIVED = "telegram_message_received"
+
+    # Telegram Bot events
+    TELEGRAM_BOT_MESSAGE_RECEIVED = "telegram_bot_message_received"
+
     # Room events
     ROOM_STATUS_CHANGED = "room_status_changed"
 
@@ -198,6 +204,48 @@ class EmailEvent(DomainEvent):
             "email_id": self.email_id,
             "from_address": self.from_address,
             "subject": self.subject,
+            "account_id": self.account_id,
+        }
+
+
+@dataclass
+class TelegramMessageEvent(DomainEvent):
+    event_type: EventType = EventType.TELEGRAM_MESSAGE_RECEIVED
+    message_id: str = ""
+    chat_id: str = ""
+    chat_title: str = ""
+    sender_id: str = ""
+    text: str = ""
+    account_id: str = ""
+
+    def __post_init__(self):
+        self.data = {
+            "message_id": self.message_id,
+            "chat_id": self.chat_id,
+            "chat_title": self.chat_title,
+            "sender_id": self.sender_id,
+            "text": self.text,
+            "account_id": self.account_id,
+        }
+
+
+@dataclass
+class TelegramBotMessageEvent(DomainEvent):
+    event_type: EventType = EventType.TELEGRAM_BOT_MESSAGE_RECEIVED
+    message_id: str = ""
+    chat_id: str = ""
+    chat_title: str = ""
+    sender_id: str = ""
+    text: str = ""
+    account_id: str = ""
+
+    def __post_init__(self):
+        self.data = {
+            "message_id": self.message_id,
+            "chat_id": self.chat_id,
+            "chat_title": self.chat_title,
+            "sender_id": self.sender_id,
+            "text": self.text,
             "account_id": self.account_id,
         }
 

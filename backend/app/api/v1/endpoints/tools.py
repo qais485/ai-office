@@ -12,8 +12,8 @@ from app.schemas.tool import (
     AgentToolAssignmentCreate, AgentToolAssignmentResponse
 )
 from app.services.tool_service import ToolService
-from app.api.deps import require_role, get_current_active_user
-from app.models.user import User, UserRole
+from app.api.deps import get_current_active_user
+from app.models.user import User
 
 import logging
 
@@ -94,7 +94,7 @@ async def get_tool(
 async def create_tool(
     tool: ToolCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = ToolService(db)
     created = service.create_tool(tool)
@@ -107,7 +107,7 @@ async def update_tool(
     tool_id: UUID,
     tool: ToolUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = ToolService(db)
     updated = service.update_tool(tool_id, tool)
@@ -121,7 +121,7 @@ async def update_tool(
 async def delete_tool(
     tool_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = ToolService(db)
     deleted = service.delete_tool(tool_id)

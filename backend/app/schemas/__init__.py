@@ -2,7 +2,6 @@ from app.schemas.user import (
     GoogleTokenRequest,
     UserResponse,
     UserUpdate,
-    UserRoleUpdate,
     UserMeResponse,
     Token,
     TokenData,
@@ -19,7 +18,7 @@ from app.schemas.risk_rule import (
 
 __all__ = [
     "GoogleTokenRequest",
-    "UserResponse", "UserUpdate", "UserRoleUpdate",
+    "UserResponse", "UserUpdate",
     "UserMeResponse", "Token", "TokenData",
     "AgentCreate", "AgentResponse", "AgentUpdate",
     "RoomCreate", "RoomResponse", "RoomUpdate",

@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.models.template import AgentTemplate
 from app.models.integration import Integration
 from app.models.tool import AgentTool
+from app.models.tool_action import ToolAction
+from app.models.tool_permission import ToolPermission
 from app.models.permission import Permission
 
 logger = logging.getLogger(__name__)
@@ -170,6 +172,35 @@ def seed_templates(db: Session):
             "default_permissions": ["read_tickets", "write_tickets", "access_knowledge_base"],
             "default_tools": ["ticket_system", "knowledge_base", "chat_tool"],
             "icon_url": "/icons/customer-support.svg"
+        },
+        {
+            "name": "Telegram Support Agent",
+            "role": "telegram_support",
+            "description": "Handles customer conversations on Telegram — via the connected Telegram Bot (customer chat) and/or the connected Telegram user account (MTProto) — answers from the knowledge base, and escalates complex issues to the CEO.",
+            "default_goals": [
+                "Respond to Telegram customer messages professionally",
+                "Answer customer questions from the company knowledge base",
+                "Resolve customer issues efficiently",
+                "Escalate complex issues to CEO when needed"
+            ],
+            "default_rules": [
+                "Always be polite and professional",
+                "Never make financial decisions without CEO approval",
+                "Keep responses concise and helpful",
+                "Respect Telegram rate limits and never spam users"
+            ],
+            "default_permissions": [
+                "send_messages",
+                "telegram_account_send",
+                "telegram_account_read",
+                "read_knowledge"
+            ],
+            "default_tools": [
+                "telegram_messaging",
+                "telegram_account_messaging",
+                "knowledge_base"
+            ],
+            "icon_url": "/icons/telegram.svg"
         }
     ]
 
@@ -179,6 +210,18 @@ def seed_templates(db: Session):
             template = AgentTemplate(**template_data)
             db.add(template)
             logger.info(f"Created template: {template_data['name']}")
+
+    # Backfill: keep the Telegram Support Agent template current on databases
+    # where it already exists (seed_templates is create-if-missing, so template
+    # upgrades would otherwise never reach them). Scoped to this one template.
+    tg_support = db.query(AgentTemplate).filter(AgentTemplate.name == "Telegram Support Agent").first()
+    if tg_support:
+        target = next(t for t in templates if t["name"] == "Telegram Support Agent")
+        for field in ("description", "default_goals", "default_rules", "default_permissions", "default_tools"):
+            new_value = target[field]
+            if getattr(tg_support, field) != new_value:
+                setattr(tg_support, field, new_value)
+                logger.info(f"Updated Telegram Support Agent template field: {field}")
 
     db.commit()
 
@@ -207,14 +250,26 @@ def seed_integrations(db: Session):
         },
         {
             "name": "telegram",
-            "display_name": "Telegram",
-            "description": "Telegram messaging platform",
-            "auth_type": "api_key",
+            "display_name": "Telegram Bot",
+            "description": "Telegram Bot API — send and receive messages through a bot token from @BotFather",
+            "auth_type": "bot_token",
             "capabilities": {
                 "send_messages": True,
                 "receive_messages": True,
                 "create_groups": True,
                 "manage_channels": True
+            },
+            "icon_url": "/icons/telegram.svg"
+        },
+        {
+            "name": "telegram_account",
+            "display_name": "Telegram Account",
+            "description": "Telegram user account — send and receive messages as yourself, using the API ID and API Hash from my.telegram.org",
+            "auth_type": "api_id_hash",
+            "capabilities": {
+                "send_messages": True,
+                "receive_messages": True,
+                "read_history": True
             },
             "icon_url": "/icons/telegram.svg"
         },
@@ -347,10 +402,18 @@ def seed_integrations(db: Session):
             db.add(integration)
             logger.info(f"Created integration: {integration_data['name']}")
         else:
+            # Update basic seed fields on existing integrations (keeps DB rows
+            # in sync with renamed / re-typed definitions, e.g. telegram → bot)
+            updated = False
+            basic_fields = ["display_name", "description", "auth_type", "icon_url"]
+            for field in basic_fields:
+                new_val = integration_data.get(field)
+                if new_val and getattr(existing, field) != new_val:
+                    setattr(existing, field, new_val)
+                    updated = True
             # Update OAuth2 fields on existing integrations
             oauth2_fields = ["oauth2_authorize_url", "oauth2_token_url", "oauth2_client_id_key",
                              "oauth2_client_secret_key", "oauth2_scopes", "oauth2_redirect_path"]
-            updated = False
             for field in oauth2_fields:
                 new_val = integration_data.get(field)
                 if new_val and getattr(existing, field) != new_val:
@@ -673,6 +736,20 @@ def seed_tools(db: Session):
             "permission_names": ["send_messages"]
         },
         {
+            "name": "telegram_account_messaging",
+            "display_name": "Telegram Account Messaging",
+            "description": "Send messages and read chat history as the connected Telegram user account (MTProto). Credentials stay server-side — agents only ever see message data.",
+            "category": "communication",
+            "risk_level": "medium",
+            "requires_approval": False,
+            "integration_name": "telegram_account",
+            "actions": [
+                {"name": "send_message", "display_name": "Send Message", "description": "Send a Telegram message as the connected user account", "risk_level": "medium", "requires_approval": False},
+                {"name": "read_history", "display_name": "Read History", "description": "Read recent messages from a Telegram chat", "risk_level": "low", "requires_approval": False}
+            ],
+            "permission_names": ["telegram_account_send", "telegram_account_read"]
+        },
+        {
             "name": "discord_messaging",
             "display_name": "Discord Messaging",
             "description": "Send and receive Discord messages",
@@ -787,7 +864,10 @@ def seed_permissions(db: Session):
         {"name": "schedule_meetings", "description": "Schedule meetings", "category": "calendar", "risk_level": "low"},
         {"name": "issue_refunds", "description": "Issue refunds", "category": "finance", "risk_level": "high", "default_approval_required": True},
         {"name": "delete_customer", "description": "Delete customer data", "category": "crm", "risk_level": "critical", "default_approval_required": True},
-        {"name": "financial_transfer", "description": "Make financial transfers", "category": "finance", "risk_level": "critical", "default_approval_required": True}
+        {"name": "financial_transfer", "description": "Make financial transfers", "category": "finance", "risk_level": "critical", "default_approval_required": True},
+        {"name": "send_messages", "description": "Send messages via connected messaging integrations", "category": "communication", "risk_level": "medium"},
+        {"name": "telegram_account_send", "description": "Send Telegram messages via the connected Telegram user account", "category": "communication", "risk_level": "medium"},
+        {"name": "telegram_account_read", "description": "Read Telegram chat history via the connected Telegram user account", "category": "communication", "risk_level": "low"}
     ]
 
     for perm_data in permissions:
@@ -796,6 +876,43 @@ def seed_permissions(db: Session):
             permission = Permission(**perm_data)
             db.add(permission)
             logger.info(f"Created permission: {perm_data['name']}")
+
+    db.commit()
+
+
+def seed_telegram_account_tool_permissions(db: Session):
+    """Link the Telegram messaging tools to their permissions (idempotent).
+
+    Runs after seed_permissions: ToolPermission rows need the Permission rows
+    to exist, and seed_tools runs before seed_permissions in seed_all (its
+    existing-tool branch never back-fills permission links). Deliberately
+    scoped to the two Telegram tools only so no other tool's permission
+    surface changes.
+    """
+    # telegram_account_messaging → account permissions (MTProto)
+    tool = db.query(AgentTool).filter(AgentTool.name == "telegram_account_messaging").first()
+    if tool:
+        linked = {
+            tp.permission_id
+            for tp in db.query(ToolPermission).filter(ToolPermission.tool_id == tool.id).all()
+        }
+        for perm_name in ("telegram_account_send", "telegram_account_read"):
+            permission = db.query(Permission).filter(Permission.name == perm_name).first()
+            if permission and permission.id not in linked:
+                db.add(ToolPermission(tool_id=tool.id, permission_id=permission.id))
+                logger.info(f"Linked permission {perm_name} to tool telegram_account_messaging")
+
+    # telegram_messaging → bot send permission (Bot API customer chat)
+    bot_tool = db.query(AgentTool).filter(AgentTool.name == "telegram_messaging").first()
+    if bot_tool:
+        linked_bot = {
+            tp.permission_id
+            for tp in db.query(ToolPermission).filter(ToolPermission.tool_id == bot_tool.id).all()
+        }
+        permission = db.query(Permission).filter(Permission.name == "send_messages").first()
+        if permission and permission.id not in linked_bot:
+            db.add(ToolPermission(tool_id=bot_tool.id, permission_id=permission.id))
+            logger.info("Linked permission send_messages to tool telegram_messaging")
 
     db.commit()
 
@@ -809,4 +926,5 @@ def seed_all(db: Session):
     seed_tools(db)
     logger.info("Seeding permissions...")
     seed_permissions(db)
+    seed_telegram_account_tool_permissions(db)
     logger.info("Seed completed!")

@@ -60,12 +60,12 @@ class AgentCollaborationService:
         )
         
         notification_service = NotificationService(self.db)
-        from app.models.user import User, UserRole
-        ceo = self.db.query(User).filter(User.role == UserRole.CEO).first()
-        if ceo:
+        # Notify the owner of the source agent (roles no longer exist)
+        owner_id = from_agent.user_id
+        if owner_id:
             notification_service.create_notification(
                 NotificationCreate(
-                    user_id=ceo.id,
+                    user_id=owner_id,
                     type="agent_collaboration",
                     title=f"Agent Collaboration: {from_agent.name} → {to_agent.name}",
                     message=f"{from_agent.name} assigned task to {to_agent.name}: {title}",

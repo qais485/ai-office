@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.services.user_service import UserService
 from app.utils.security import decode_access_token
 
@@ -44,14 +44,3 @@ def get_current_active_user(
             detail="Inactive user",
         )
     return current_user
-
-
-def require_role(*roles: UserRole):
-    def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
-        if current_user.role not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Role '{current_user.role.value}' is not authorized for this action",
-            )
-        return current_user
-    return role_checker

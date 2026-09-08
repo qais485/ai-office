@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.main import app
 from app.database.session import Base, get_db
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.utils.security import create_access_token
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_features.db"
@@ -52,7 +52,7 @@ def ceo_user(db_session):
         id=uuid4(),
         email="ceo@test.com",
         name="Test CEO",
-        role=UserRole.CEO,
+        role="user",
         is_active=True
     )
     db_session.add(user)

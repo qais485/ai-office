@@ -20,24 +20,26 @@ class DashboardService:
     def __init__(self, db: Session):
         self.db = db
 
-    def _filter_user_agents(self, query, user_id: Optional[UUID] = None, role: Optional[str] = None):
-        if user_id is not None and role not in ("ceo", "admin"):
+    def _filter_user_agents(self, query, user_id: Optional[UUID] = None):
+        """Strict per-account scoping — every dashboard view shows only the
+        agents owned by the requesting account. No role bypasses this."""
+        if user_id is not None:
             query = query.filter(AIAgent.user_id == user_id)
         return query
 
-    def _filter_user_rooms(self, query, user_id: Optional[UUID] = None, role: Optional[str] = None):
-        if user_id is not None and role not in ("ceo", "admin"):
+    def _filter_user_rooms(self, query, user_id: Optional[UUID] = None):
+        if user_id is not None:
             query = query.filter(OfficeRoom.user_id == user_id)
         return query
 
-    def get_summary(self, user_id: Optional[UUID] = None, role: Optional[str] = None) -> DashboardSummary:
+    def get_summary(self, user_id: Optional[UUID] = None) -> DashboardSummary:
         logger.debug("Fetching dashboard summary for user %s", user_id)
 
         # ── Batched counts: 3 grouped queries instead of ~13 COUNT round-trips.
         # With a remote DB (Neon) every round-trip costs 100s of ms, so the
         # sequential COUNT queries made this endpoint take 10-20+s.
         agent_counts = dict(
-            self._filter_user_agents(self.db.query(AIAgent.status, func.count(AIAgent.id)), user_id, role)
+            self._filter_user_agents(self.db.query(AIAgent.status, func.count(AIAgent.id)), user_id)
             .group_by(AIAgent.status)
             .all()
         )
@@ -47,7 +49,7 @@ class DashboardService:
         inactive_agents = agent_counts.get(AgentStatus.INACTIVE, 0)
 
         room_counts = dict(
-            self._filter_user_rooms(self.db.query(OfficeRoom.status, func.count(OfficeRoom.id)), user_id, role)
+            self._filter_user_rooms(self.db.query(OfficeRoom.status, func.count(OfficeRoom.id)), user_id)
             .group_by(OfficeRoom.status)
             .all()
         )
@@ -56,8 +58,11 @@ class DashboardService:
         occupied_rooms = room_counts.get(RoomStatus.OCCUPIED, 0)
         maintenance_rooms = room_counts.get(RoomStatus.MAINTENANCE, 0)
 
+        task_query = self._user_task_query().with_entities(Task.status, func.count(Task.id))
+        if user_id is not None:
+            task_query = task_query.filter(AIAgent.user_id == user_id)
         task_counts = dict(
-            self.db.query(Task.status, func.count(Task.id))
+            task_query
             .group_by(Task.status)
             .all()
         )
@@ -68,7 +73,7 @@ class DashboardService:
         failed_tasks = task_counts.get(TaskStatus.FAILED, 0)
 
         agent_list_query = self.db.query(AIAgent)
-        agent_list_query = self._filter_user_agents(agent_list_query, user_id, role)
+        agent_list_query = self._filter_user_agents(agent_list_query, user_id)
         agents = agent_list_query.all()
         agent_summaries = []
         room_ids = {a.room_id for a in agents if a.room_id}
@@ -88,10 +93,11 @@ class DashboardService:
         recent_tasks_query = (
             self.db.query(Task, AIAgent.name)
             .join(AIAgent, Task.agent_id == AIAgent.id)
+            .filter(AIAgent.user_id == user_id)
             .order_by(Task.created_at.desc())
             .limit(10)
             .all()
-        )
+        ) if user_id is not None else []
         recent_tasks = [
             TaskSummary(
                 id=task.id,
@@ -107,11 +113,14 @@ class DashboardService:
         pending_actions_query = (
             self.db.query(Task, AIAgent.name)
             .join(AIAgent, Task.agent_id == AIAgent.id)
-            .filter(Task.status.in_([TaskStatus.PENDING, TaskStatus.RUNNING]))
+            .filter(
+                AIAgent.user_id == user_id,
+                Task.status.in_([TaskStatus.PENDING, TaskStatus.RUNNING]),
+            )
             .order_by(Task.created_at.desc())
             .limit(10)
             .all()
-        )
+        ) if user_id is not None else []
         pending_actions = [
             TaskSummary(
                 id=task.id,
@@ -143,48 +152,77 @@ class DashboardService:
             pending_actions=pending_actions,
         )
 
-    def get_ceo_summary(self, user_id: Optional[UUID] = None, role: Optional[str] = None) -> Dict[str, Any]:
+    def _user_task_query(self):
+        """Task counts scoped through the owning agent — tasks belong to an
+        agent, agents belong to an account."""
+        return self.db.query(Task).join(AIAgent, Task.agent_id == AIAgent.id)
+
+    def get_ceo_summary(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
         logger.debug("Fetching CEO summary for user %s", user_id)
 
         agent_query = self.db.query(func.count(AIAgent.id))
-        agent_query = self._filter_user_agents(agent_query, user_id, role)
+        agent_query = self._filter_user_agents(agent_query, user_id)
         total_agents = agent_query.scalar() or 0
 
         agent_active_query = self.db.query(func.count(AIAgent.id)).filter(
             AIAgent.status.in_([AgentStatus.ACTIVE, AgentStatus.BUSY])
         )
-        agent_active_query = self._filter_user_agents(agent_active_query, user_id, role)
+        agent_active_query = self._filter_user_agents(agent_active_query, user_id)
         active_agents = agent_active_query.scalar() or 0
 
         agent_inactive_query = self.db.query(func.count(AIAgent.id)).filter(
             AIAgent.status == AgentStatus.INACTIVE
         )
-        agent_inactive_query = self._filter_user_agents(agent_inactive_query, user_id, role)
+        agent_inactive_query = self._filter_user_agents(agent_inactive_query, user_id)
         inactive_agents = agent_inactive_query.scalar() or 0
 
         agent_error_query = self.db.query(func.count(AIAgent.id)).filter(
             AIAgent.lifecycle_status == LifecycleStatus.ERROR
         )
-        agent_error_query = self._filter_user_agents(agent_error_query, user_id, role)
+        agent_error_query = self._filter_user_agents(agent_error_query, user_id)
         error_agents = agent_error_query.scalar() or 0
 
-        total_tasks = self.db.query(func.count(Task.id)).scalar() or 0
+        def _owned_task_count(extra_filter=None):
+            q = self._user_task_query()
+            if user_id is not None:
+                q = q.filter(AIAgent.user_id == user_id)
+            if extra_filter is not None:
+                q = q.filter(extra_filter)
+            return q.with_entities(func.count(Task.id)).scalar() or 0
+
         today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        tasks_today = self.db.query(func.count(Task.id)).filter(Task.created_at >= today_start).scalar() or 0
-        tasks_completed = self.db.query(func.count(Task.id)).filter(Task.status == TaskStatus.COMPLETED).scalar() or 0
-        tasks_running = self.db.query(func.count(Task.id)).filter(Task.status == TaskStatus.RUNNING).scalar() or 0
-        tasks_failed = self.db.query(func.count(Task.id)).filter(Task.status == TaskStatus.FAILED).scalar() or 0
+        total_tasks = _owned_task_count()
+        tasks_today = _owned_task_count(Task.created_at >= today_start)
+        tasks_completed = _owned_task_count(Task.status == TaskStatus.COMPLETED)
+        tasks_running = _owned_task_count(Task.status == TaskStatus.RUNNING)
+        tasks_failed = _owned_task_count(Task.status == TaskStatus.FAILED)
 
         success_rate = round((tasks_completed / total_tasks * 100), 1) if total_tasks > 0 else 0
 
-        pending_approvals = self.db.query(func.count(Approval.id)).filter(Approval.status == "pending").scalar() or 0
+        def _owned_approval_count(status_value):
+            q = (
+                self.db.query(func.count(Approval.id))
+                .join(AIAgent, Approval.agent_id == AIAgent.id)
+            )
+            if user_id is not None:
+                q = q.filter(AIAgent.user_id == user_id)
+            return q.filter(Approval.status == status_value).scalar() or 0
 
-        emails_today = self.db.query(func.count(EmailMessage.id)).filter(
-            EmailMessage.created_at >= today_start
-        ).scalar() or 0
+        pending_approvals = _owned_approval_count("pending")
+
+        def _owned_email_count(created_after):
+            q = (
+                self.db.query(func.count(EmailMessage.id))
+                .join(AIAgent, EmailMessage.agent_id == AIAgent.id)
+            )
+            if user_id is not None:
+                q = q.filter(AIAgent.user_id == user_id)
+            return q.filter(EmailMessage.created_at >= created_after).scalar() or 0
+
+        emails_today = _owned_email_count(today_start)
 
         room_query = self.db.query(func.count(OfficeRoom.id))
-        room_query = self._filter_user_rooms(room_query, user_id, role)
+        room_query = self._filter_user_rooms(room_query, user_id)
         room_total = room_query.scalar() or 0
 
         return {
@@ -213,9 +251,9 @@ class DashboardService:
             },
         }
 
-    def get_agent_status_overview(self, user_id: Optional[UUID] = None, role: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_agent_status_overview(self, user_id: Optional[UUID] = None) -> List[Dict[str, Any]]:
         agent_query = self.db.query(AIAgent)
-        agent_query = self._filter_user_agents(agent_query, user_id, role)
+        agent_query = self._filter_user_agents(agent_query, user_id)
         agents = agent_query.all()
 
         if not agents:
@@ -283,10 +321,10 @@ class DashboardService:
 
         return overview
 
-    def get_recent_activity(self, limit: int = 20, user_id: Optional[UUID] = None, role: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_recent_activity(self, limit: int = 20, user_id: Optional[UUID] = None) -> List[Dict[str, Any]]:
         query = self.db.query(AgentActivity)
-        if user_id is not None and role not in ("ceo", "admin"):
-            agent_ids = [a.id for a in self._filter_user_agents(self.db.query(AIAgent), user_id, role).all()]
+        if user_id is not None:
+            agent_ids = [a.id for a in self._filter_user_agents(self.db.query(AIAgent), user_id).all()]
             if not agent_ids:
                 return []
             query = query.filter(AgentActivity.agent_id.in_(agent_ids))
@@ -314,15 +352,23 @@ class DashboardService:
 
         return result
 
-    def get_performance_metrics(self, user_id: Optional[UUID] = None, role: Optional[str] = None) -> Dict[str, Any]:
-        total_tasks = self.db.query(func.count(Task.id)).scalar() or 0
-        completed_tasks = self.db.query(func.count(Task.id)).filter(Task.status == TaskStatus.COMPLETED).scalar() or 0
-        failed_tasks = self.db.query(func.count(Task.id)).filter(Task.status == TaskStatus.FAILED).scalar() or 0
+    def get_performance_metrics(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
+        def _owned_task_count(extra_filter=None):
+            q = self._user_task_query()
+            if user_id is not None:
+                q = q.filter(AIAgent.user_id == user_id)
+            if extra_filter is not None:
+                q = q.filter(extra_filter)
+            return q.with_entities(func.count(Task.id)).scalar() or 0
+
+        total_tasks = _owned_task_count()
+        completed_tasks = _owned_task_count(Task.status == TaskStatus.COMPLETED)
+        failed_tasks = _owned_task_count(Task.status == TaskStatus.FAILED)
 
         success_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
         agent_query = self.db.query(AIAgent)
-        agent_query = self._filter_user_agents(agent_query, user_id, role)
+        agent_query = self._filter_user_agents(agent_query, user_id)
         agents = agent_query.all()
         agent_metrics = []
 

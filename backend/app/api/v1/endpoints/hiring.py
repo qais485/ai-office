@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 
 from app.database.session import get_db
 from app.services.hiring_service import HiringService
-from app.api.deps import require_role, get_current_active_user
-from app.models.user import User, UserRole
+from app.api.deps import get_current_active_user
+from app.models.user import User
 from app.schemas.template import AgentTemplateResponse
 from app.schemas.tool import ToolResponse
 from app.schemas.permission import PermissionResponse

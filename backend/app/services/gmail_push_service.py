@@ -176,13 +176,16 @@ class GmailPushService:
         """Renew an expiring Gmail watch. Called by the scheduler before expiration."""
         return self.setup_watch(integration_account_id)
 
-    def setup_all_watches(self) -> Dict[str, Any]:
-        """Set up or renew watches for all active Gmail sync states."""
+    def setup_all_watches(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
+        """Set up or renew watches for the account's active Gmail sync states."""
         from app.models.gmail_sync_state import GmailSyncState
 
-        states = self.db.query(GmailSyncState).filter(
+        query = self.db.query(GmailSyncState).filter(
             GmailSyncState.is_active == True,
-        ).all()
+        )
+        if user_id is not None:
+            query = query.filter(GmailSyncState.user_id == user_id)
+        states = query.all()
 
         results = {"success": 0, "failed": 0, "skipped": 0}
 

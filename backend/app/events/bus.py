@@ -24,6 +24,7 @@ class EventBus:
         self._queue: asyncio.Queue[DomainEvent] = asyncio.Queue()
         self._running = False
         self._task: asyncio.Task | None = None
+        self._tasks: list[asyncio.Task] = []
 
     def subscribe(self, event_type: EventType, handler: EventHandler) -> None:
         """Subscribe a handler to a specific event type."""
@@ -91,19 +92,29 @@ class EventBus:
         if self._running:
             return
         self._running = True
+        # Recreate the queue on every start: an asyncio.Queue binds itself to
+        # the event loop that first awaits it. Test lifecycles start/stop the
+        # bus on fresh loops, and a stale queue would raise "bound to a
+        # different event loop" forever (events silently never dispatched).
+        self._queue = asyncio.Queue()
         self._task = asyncio.create_task(self._process_loop())
+        self._tasks.append(self._task)
         logger.info("Event bus started")
 
     async def stop(self) -> None:
         """Stop the background event processing loop."""
         self._running = False
-        if self._task:
-            self._task.cancel()
+        # Cancel every worker ever started, not just the latest one —
+        # otherwise superseded workers keep looping forever.
+        tasks, self._tasks = self._tasks, []
+        self._task = None
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
             try:
-                await self._task
+                await task
             except asyncio.CancelledError:
                 pass
-            self._task = None
         logger.info("Event bus stopped")
 
     async def _process_loop(self) -> None:

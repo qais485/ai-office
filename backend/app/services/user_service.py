@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-from app.models.user import User, UserRole
+from app.models.user import User, USER_ROLE
 from app.schemas.user import UserUpdate
 import logging
 
@@ -17,7 +17,15 @@ class UserService:
         return self.db.query(User).all()
 
     def get_user(self, user_id: UUID) -> Optional[User]:
-        return self.db.query(User).filter(User.id == user_id).first()
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            return None
+        # Legacy databases may still carry 'ceo'/'admin' role strings; roles
+        # no longer exist, so normalize on read (no privileges attached).
+        if user.role != USER_ROLE:
+            user.role = USER_ROLE
+            self.db.commit()
+        return user
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         return self.db.query(User).filter(User.email == email).first()
@@ -39,6 +47,8 @@ class UserService:
             user.name = name
             if avatar_url:
                 user.avatar_url = avatar_url
+            if user.role != USER_ROLE:
+                user.role = USER_ROLE
             self.db.commit()
             self.db.refresh(user)
             return user
@@ -48,25 +58,24 @@ class UserService:
             user.google_id = google_id
             if avatar_url:
                 user.avatar_url = avatar_url
+            if user.role != USER_ROLE:
+                user.role = USER_ROLE
             self.db.commit()
             self.db.refresh(user)
             return user
-
-        existing_users = self.db.query(User).count()
-        role = UserRole.CEO if existing_users == 0 else UserRole.USER
 
         user = User(
             email=email,
             name=name,
             google_id=google_id,
             avatar_url=avatar_url,
-            role=role,
+            role=USER_ROLE,
             is_active=True,
         )
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
-        logger.info("New user created: id=%s email=%s role=%s", user.id, user.email, user.role.value)
+        logger.info("New user created: id=%s email=%s role=%s", user.id, user.email, user.role)
         return user
 
     def update_user(self, user_id: UUID, user_data: UserUpdate) -> Optional[User]:
@@ -75,14 +84,6 @@ class UserService:
             update_data = user_data.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(user, key, value)
-            self.db.commit()
-            self.db.refresh(user)
-        return user
-
-    def update_role(self, user_id: UUID, role: UserRole) -> Optional[User]:
-        user = self.get_user(user_id)
-        if user:
-            user.role = role
             self.db.commit()
             self.db.refresh(user)
         return user

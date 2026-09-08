@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -18,4 +18,4 @@ router = APIRouter()
 def get_dashboard_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     dashboard_service = DashboardService(db)
     logger.debug("User %s requested dashboard summary", current_user.id)
-    return dashboard_service.get_summary(user_id=current_user.id, role=current_user.role)
+    return dashboard_service.get_summary(user_id=current_user.id)

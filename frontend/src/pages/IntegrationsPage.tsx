@@ -5,6 +5,7 @@ import { officeService } from '../services/office'
 const INTEGRATION_ICONS: Record<string, string> = {
   gmail: 'M',
   telegram: 'T',
+  telegram_account: 'T',
   instagram: 'I',
   slack: 'S',
   discord: 'D',
@@ -17,6 +18,7 @@ const INTEGRATION_ICONS: Record<string, string> = {
 const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
   gmail: { bg: 'bg-red-500/15', text: 'text-red-300' },
   telegram: { bg: 'bg-blue-500/15', text: 'text-blue-300' },
+  telegram_account: { bg: 'bg-cyan-500/15', text: 'text-cyan-300' },
   instagram: { bg: 'bg-pink-500/15', text: 'text-pink-300' },
   slack: { bg: 'bg-purple-500/15', text: 'text-purple-300' },
   discord: { bg: 'bg-indigo-500/15', text: 'text-indigo-300' },
@@ -24,6 +26,13 @@ const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
   google_drive: { bg: 'bg-green-500/15', text: 'text-green-300' },
   notion: { bg: 'bg-white/10', text: 'text-white/60' },
   crm: { bg: 'bg-amber-500/15', text: 'text-amber-300' },
+}
+
+const AUTH_TYPE_LABELS: Record<string, string> = {
+  oauth2: 'OAuth 2',
+  api_key: 'API Key',
+  bot_token: 'Bot Token',
+  api_id_hash: 'API ID / API Hash',
 }
 
 function IntegrationCard({
@@ -58,7 +67,7 @@ function IntegrationCard({
               {igUsername ? (
                 <span className="font-medium text-pink-300">@{igUsername}</span>
               ) : (
-                `${integration.auth_type} auth`
+                `${AUTH_TYPE_LABELS[integration.auth_type] ?? integration.auth_type} auth`
               )}
             </p>
           </div>
@@ -127,26 +136,43 @@ function ConnectModal({
   onClose,
   onConnect,
   onOAuth,
+  onConnected,
 }: {
   integration: Integration
   onClose: () => void
   onConnect: (credentials: Record<string, unknown>) => void
   onOAuth: () => void
+  onConnected: () => void
 }) {
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const [step, setStep] = useState<'credentials' | 'code' | 'password'>('credentials')
+  const [loginPhone, setLoginPhone] = useState('')
 
   const isOAuth = integration.auth_type === 'oauth2'
+  const isBotToken = integration.auth_type === 'bot_token'
+  const isApiIdHash = integration.auth_type === 'api_id_hash'
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (isOAuth) {
-      onOAuth()
-      return
+  const validateApiPair = () => {
+    const apiId = (credentials.api_id || '').trim()
+    const apiHash = (credentials.api_hash || '').trim()
+    if (!apiId || !apiHash) {
+      setValidationError('Enter your API ID and API Hash to connect.')
+      return false
     }
-    if (!credentials.api_key && !credentials.bot_token) {
-      return
+    if (!/^\d{1,10}$/.test(apiId)) {
+      setValidationError('API ID must be numeric (get it at my.telegram.org).')
+      return false
     }
+    if (!/^[0-9a-fA-F]{32}$/.test(apiHash)) {
+      setValidationError('API Hash must be the 32-character hex value from my.telegram.org.')
+      return false
+    }
+    return true
+  }
+
+  const connectManually = async () => {
     setLoading(true)
     try {
       await onConnect(credentials)
@@ -154,6 +180,101 @@ function ConnectModal({
     } catch {
       setLoading(false)
     }
+  }
+
+  const startTelegramLogin = async () => {
+    setValidationError(null)
+    const apiId = (credentials.api_id || '').trim()
+    const apiHash = (credentials.api_hash || '').trim()
+    const phone = (credentials.phone || '').trim()
+    if (!validateApiPair()) return
+    if (!/^\+?\d{6,15}$/.test(phone.replace(/[\s()\-.]/g, ''))) {
+      setValidationError('Enter your phone number in international format, e.g. +989123456789.')
+      return
+    }
+    setLoading(true)
+    const res = await officeService.telegramLoginStart(integration.id, { api_id: apiId, api_hash: apiHash, phone })
+    if (!res.success || !res.data) {
+      setValidationError(res.error ?? 'Failed to send the Telegram code.')
+      setLoading(false)
+      return
+    }
+    setLoginPhone(res.data.phone ?? phone)
+    setStep('code')
+    setLoading(false)
+  }
+
+  const verifyTelegramCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setValidationError(null)
+    const code = (credentials.code || '').trim()
+    if (!/^\d{4,8}$/.test(code)) {
+      setValidationError('Enter the numeric code Telegram sent you.')
+      return
+    }
+    setLoading(true)
+    const res = await officeService.telegramLoginVerifyCode(integration.id, code)
+    if (!res.success || !res.data) {
+      setValidationError(res.error ?? 'The code was rejected. Try again.')
+      setLoading(false)
+      return
+    }
+    if (res.data.status === '2fa_required') {
+      setStep('password')
+      setLoading(false)
+      return
+    }
+    onConnected()
+    onClose()
+  }
+
+  const verifyTelegramPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setValidationError(null)
+    if (!credentials.password?.trim()) {
+      setValidationError('Enter your Telegram two-step verification password.')
+      return
+    }
+    setLoading(true)
+    const res = await officeService.telegramLoginVerifyPassword(integration.id, credentials.password)
+    if (!res.success || !res.data) {
+      setValidationError(res.error ?? 'The password was rejected. Try again.')
+      setLoading(false)
+      return
+    }
+    onConnected()
+    onClose()
+  }
+
+  const backToCredentials = async () => {
+    setStep('credentials')
+    setValidationError(null)
+    setCredentials((c) => ({ ...c, code: '', password: '' }))
+    await officeService.telegramLoginCancel(integration.id)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setValidationError(null)
+    if (isOAuth) {
+      onOAuth()
+      return
+    }
+    if (isApiIdHash) {
+      if (credentials.session?.trim()) {
+        if (!validateApiPair()) return
+        await connectManually()
+        return
+      }
+      await startTelegramLogin()
+      return
+    }
+    if (isBotToken) {
+      if (!credentials.bot_token?.trim()) return
+    } else if (!credentials.api_key?.trim()) {
+      return
+    }
+    await connectManually()
   }
 
   return (
@@ -171,39 +292,110 @@ function ConnectModal({
         </div>
 
         <p className="text-sm text-white/70 mb-4">
-          {isOAuth
-            ? `Authorize ${integration.display_name} to connect your account.`
-            : `Enter your ${integration.display_name} credentials to connect.`}
+          {step === 'credentials' && isOAuth && `Authorize ${integration.display_name} to connect your account.`}
+          {step === 'credentials' && isOAuth === false && isApiIdHash === false &&
+            `Enter your ${integration.display_name} credentials to connect.`}
+          {step === 'credentials' && isApiIdHash &&
+            `Sign in with your API ID / API Hash from my.telegram.org — Telegram will send a code to your phone.`}
+          {step === 'code' &&
+            `Telegram sent a login code to ${loginPhone}. Enter it below.`}
+          {step === 'password' &&
+            'Your account is protected with two-step verification. Enter your Telegram password.'}
         </p>
 
+        {step === 'credentials' && (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isOAuth && (
+          {!isOAuth && isBotToken && (
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-1">Bot Token</label>
+              <input
+                type="password"
+                value={credentials.bot_token || ''}
+                onChange={(e) => setCredentials({ ...credentials, bot_token: e.target.value })}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
+                placeholder="123456789:AAF3..."
+                required
+              />
+              <p className="mt-1 text-xs text-white/40">
+                Create a bot with @BotFather in Telegram and paste the token it gives you.
+              </p>
+            </div>
+          )}
+
+          {!isOAuth && isApiIdHash && (
             <>
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-1">API Key</label>
+                <label className="block text-sm font-medium text-white/80 mb-1">API ID</label>
                 <input
-                  type="password"
-                  value={credentials.api_key || ''}
-                  onChange={(e) => setCredentials({ ...credentials, api_key: e.target.value })}
+                  type="text"
+                  inputMode="numeric"
+                  value={credentials.api_id || ''}
+                  onChange={(e) => setCredentials({ ...credentials, api_id: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
-                  placeholder="Enter your API key"
+                  placeholder="1234567"
                   required
                 />
               </div>
-              {integration.auth_type === 'bot_token' && (
-                <div>
-                  <label className="block text-sm font-medium text-white/80 mb-1">Bot Token</label>
-                  <input
-                    type="password"
-                    value={credentials.bot_token || ''}
-                    onChange={(e) => setCredentials({ ...credentials, bot_token: e.target.value })}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
-                    placeholder="Enter your bot token"
-                    required
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1">API Hash</label>
+                <input
+                  type="password"
+                  value={credentials.api_hash || ''}
+                  onChange={(e) => setCredentials({ ...credentials, api_hash: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
+                  placeholder="32-character hex value"
+                  required
+                />
+                <p className="mt-1 text-xs text-white/40">
+                  Create an app at <a href="https://my.telegram.org" target="_blank" rel="noreferrer" className="text-indigo-400 hover:text-indigo-300">my.telegram.org</a> and copy both values.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1">Phone Number</label>
+                <input
+                  type="tel"
+                  value={credentials.phone || ''}
+                  onChange={(e) => setCredentials({ ...credentials, phone: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
+                  placeholder="+989123456789"
+                />
+                <p className="mt-1 text-xs text-white/40">
+                  Telegram sends a login code to this number to finish connecting.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1">
+                  Session String <span className="text-white/40 font-normal">(manual alternative)</span>
+                </label>
+                <input
+                  type="password"
+                  value={credentials.session || ''}
+                  onChange={(e) => setCredentials({ ...credentials, session: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
+                  placeholder="Telethon StringSession — required for sending as your account"
+                />
+              </div>
             </>
+          )}
+
+          {!isOAuth && !isBotToken && !isApiIdHash && (
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-1">API Key</label>
+              <input
+                type="password"
+                value={credentials.api_key || ''}
+                onChange={(e) => setCredentials({ ...credentials, api_key: e.target.value })}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
+                placeholder="Enter your API key"
+                required
+              />
+            </div>
+          )}
+
+          {validationError && (
+            <div className="bg-red-500/10 border border-red-500/25 text-red-400 text-sm rounded-lg px-3 py-2">
+              {validationError}
+            </div>
           )}
 
           <div className="flex gap-3 pt-2">
@@ -219,10 +411,103 @@ function ConnectModal({
               disabled={loading}
               className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors disabled:opacity-50"
             >
-              {loading ? 'Connecting...' : isOAuth ? 'Authorize' : 'Connect'}
+              {loading
+                ? 'Connecting...'
+                : isOAuth
+                  ? 'Authorize'
+                  : isApiIdHash
+                    ? 'Send Code'
+                    : 'Connect'}
             </button>
           </div>
         </form>
+        )}
+
+        {step === 'code' && (
+        <form onSubmit={verifyTelegramCode} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-1">Login Code</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              value={credentials.code || ''}
+              onChange={(e) => setCredentials({ ...credentials, code: e.target.value })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 tracking-widest"
+              placeholder="•••••"
+              required
+            />
+            <p className="mt-1 text-xs text-white/40">
+              Sent to your Telegram app. Wrong number? Go back and start again.
+            </p>
+          </div>
+
+          {validationError && (
+            <div className="bg-red-500/10 border border-red-500/25 text-red-400 text-sm rounded-lg px-3 py-2">
+              {validationError}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={backToCredentials}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white/80 bg-white/10 hover:bg-white/15 rounded-lg transition-colors"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Verifying...' : 'Verify Code'}
+            </button>
+          </div>
+        </form>
+        )}
+
+        {step === 'password' && (
+        <form onSubmit={verifyTelegramPassword} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-1">Telegram Password</label>
+            <input
+              type="password"
+              autoComplete="current-password"
+              autoFocus
+              value={credentials.password || ''}
+              onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
+              placeholder="Two-step verification password"
+              required
+            />
+          </div>
+
+          {validationError && (
+            <div className="bg-red-500/10 border border-red-500/25 text-red-400 text-sm rounded-lg px-3 py-2">
+              {validationError}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={backToCredentials}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white/80 bg-white/10 hover:bg-white/15 rounded-lg transition-colors"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Verifying...' : 'Finish Connection'}
+            </button>
+          </div>
+        </form>
+        )}
       </div>
     </div>
   )
@@ -274,6 +559,10 @@ export default function IntegrationsPage() {
   const handleConnectSubmit = async (credentials: Record<string, unknown>) => {
     if (!connectModal) return
     await officeService.connectIntegration(connectModal.id, credentials)
+    await loadData()
+  }
+
+  const handleFlowConnected = async () => {
     await loadData()
   }
 
@@ -351,10 +640,12 @@ export default function IntegrationsPage() {
 
       {connectModal && (
         <ConnectModal
+          key={connectModal.id}
           integration={connectModal}
           onClose={() => setConnectModal(null)}
           onConnect={handleConnectSubmit}
           onOAuth={handleOAuth}
+          onConnected={handleFlowConnected}
         />
       )}
     </div>

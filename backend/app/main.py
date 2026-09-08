@@ -205,6 +205,22 @@ async def lifespan(app: FastAPI):
         interval_seconds=settings.GMAIL_POLL_INTERVAL,
     )
 
+    # Telegram Account (MTProto) inbound monitoring job
+    from app.services.telegram_monitor_service import check_all_telegram_accounts
+    scheduler.register_job(
+        name="telegram_monitoring",
+        func=check_all_telegram_accounts,
+        interval_seconds=settings.TELEGRAM_POLL_INTERVAL,
+    )
+
+    # Telegram Bot customer-chat monitoring job
+    from app.services.telegram_bot_monitor_service import check_all_telegram_bots
+    scheduler.register_job(
+        name="telegram_bot_monitoring",
+        func=check_all_telegram_bots,
+        interval_seconds=settings.TELEGRAM_BOT_POLL_INTERVAL,
+    )
+
     # Gmail Push notification watch renewal job (if push is enabled)
     if getattr(settings, "GMAIL_PUSH_ENABLED", False):
         async def gmail_watch_renewal():
@@ -240,6 +256,8 @@ async def lifespan(app: FastAPI):
         extra={
             "email_interval": settings.EMAIL_POLL_INTERVAL,
             "gmail_interval": settings.GMAIL_POLL_INTERVAL,
+            "telegram_interval": settings.TELEGRAM_POLL_INTERVAL,
+            "telegram_bot_interval": settings.TELEGRAM_BOT_POLL_INTERVAL,
         },
     )
 

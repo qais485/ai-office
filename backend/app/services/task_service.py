@@ -159,10 +159,15 @@ class TaskService:
     def get_subtasks(self, parent_task_id: UUID) -> List[Task]:
         return self.db.query(Task).filter(Task.parent_task_id == parent_task_id).order_by(Task.created_at.desc()).all()
 
-    def get_task_stats(self, agent_id: Optional[UUID] = None) -> dict:
+    def get_task_stats(self, agent_id: Optional[UUID] = None, user_id: Optional[UUID] = None) -> dict:
         from sqlalchemy import func
+        from app.models.agent import AIAgent
 
-        query = self.db.query(Task)
+        # Strict per-account scoping: only tasks of the requesting account's
+        # agents are counted (optionally narrowed to one owned agent).
+        query = self.db.query(Task).join(AIAgent, Task.agent_id == AIAgent.id)
+        if user_id is not None:
+            query = query.filter(AIAgent.user_id == user_id)
         if agent_id:
             query = query.filter(Task.agent_id == agent_id)
 

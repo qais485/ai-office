@@ -11,8 +11,8 @@ from app.events.bus import event_bus
 from app.events.types import (
     EventType, DomainEvent, AgentStatusEvent, AgentLifecycleEvent,
     AgentErrorEvent, TaskEvent, ApprovalEvent, NotificationEvent,
-    EmailEvent, RoomStatusEvent, IntegrationEvent, ToolExecutionEvent,
-    ActivityEvent,
+    EmailEvent, TelegramMessageEvent, TelegramBotMessageEvent,
+    RoomStatusEvent, IntegrationEvent, ToolExecutionEvent, ActivityEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -125,6 +125,46 @@ async def publish_email_received(
         email_id=str(email_id),
         from_address=from_address,
         subject=subject,
+        account_id=str(account_id) if account_id else "",
+    )
+    await event_bus.publish(event)
+
+
+async def publish_telegram_message_received(
+    message_id: str,
+    chat_id: str,
+    chat_title: str = "",
+    sender_id: str = "",
+    text: str = "",
+    account_id: UUID = None,
+) -> None:
+    """Publish TELEGRAM_MESSAGE_RECEIVED for an incoming MTProto account message."""
+    event = TelegramMessageEvent(
+        message_id=str(message_id),
+        chat_id=str(chat_id),
+        chat_title=chat_title or "",
+        sender_id=str(sender_id or ""),
+        text=text or "",
+        account_id=str(account_id) if account_id else "",
+    )
+    await event_bus.publish(event)
+
+
+async def publish_telegram_bot_message_received(
+    message_id: str,
+    chat_id: str,
+    chat_title: str = "",
+    sender_id: str = "",
+    text: str = "",
+    account_id: UUID = None,
+) -> None:
+    """Publish TELEGRAM_BOT_MESSAGE_RECEIVED for an incoming Bot API message."""
+    event = TelegramBotMessageEvent(
+        message_id=str(message_id),
+        chat_id=str(chat_id),
+        chat_title=chat_title or "",
+        sender_id=str(sender_id or ""),
+        text=text or "",
         account_id=str(account_id) if account_id else "",
     )
     await event_bus.publish(event)

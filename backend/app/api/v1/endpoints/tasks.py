@@ -150,4 +150,4 @@ def get_subtasks(task_id: UUID, db: Session = Depends(get_db), current_user: Use
 @router.get("/stats/summary")
 def get_task_stats(agent_id: Optional[UUID] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     task_service = TaskService(db)
-    return task_service.get_task_stats(agent_id=agent_id)
+    return task_service.get_task_stats(agent_id=agent_id, user_id=current_user.id)

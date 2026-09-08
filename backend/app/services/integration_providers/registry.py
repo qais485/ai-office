@@ -29,6 +29,7 @@ def _load_builtin_providers() -> None:
     from app.services.integration_providers.google_drive import GoogleDriveProvider
     from app.services.integration_providers.slack import SlackProvider
     from app.services.integration_providers.telegram import TelegramProvider
+    from app.services.integration_providers.telegram_account import TelegramAccountProvider
     from app.services.integration_providers.instagram import InstagramProvider
 
     for provider_cls in (
@@ -37,6 +38,7 @@ def _load_builtin_providers() -> None:
         GoogleDriveProvider,
         SlackProvider,
         TelegramProvider,
+        TelegramAccountProvider,
         InstagramProvider,
     ):
         register_provider(provider_cls())

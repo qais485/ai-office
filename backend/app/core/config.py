@@ -85,6 +85,13 @@ class Settings(BaseSettings):
     SCHEDULER_TICK_INTERVAL: int = 5               # seconds between scheduler ticks
     EMAIL_POLL_INTERVAL: int = 60                   # seconds between email polling cycles
     GMAIL_POLL_INTERVAL: int = 60                   # seconds between Gmail API checks (1 min)
+    TELEGRAM_POLL_INTERVAL: int = 60                # seconds between Telegram account checks (1 min)
+    TELEGRAM_WATCH_GROUPS: bool = False             # also watch Telegram groups (default: private chats only)
+    TELEGRAM_FETCH_LIMIT: int = 20                  # messages fetched per dialog per cycle
+    TELEGRAM_MAX_TRIGGERS_PER_CYCLE: int = 10       # flood cap for agent triggers per account per cycle
+    TELEGRAM_BOT_POLL_INTERVAL: int = 60            # seconds between Telegram Bot getUpdates cycles (1 min)
+    TELEGRAM_BOT_FETCH_LIMIT: int = 20              # updates fetched per bot per cycle
+    TELEGRAM_BOT_MAX_TRIGGERS_PER_CYCLE: int = 10   # flood cap for bot agent triggers per account per cycle
     AGENT_TRIGGER_WORKER_INTERVAL: int = 10         # seconds between scheduled-trigger scans
     AGENT_LOOP_INTERVAL: int = 2                    # seconds between per-agent trigger polls
 

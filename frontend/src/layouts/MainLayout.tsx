@@ -78,11 +78,6 @@ function UserAccount() {
               {user.email && (
                 <p className="text-xs text-white/40 truncate">{user.email}</p>
               )}
-              {user.role && (
-                <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-indigo-500/15 text-indigo-300 rounded-full capitalize">
-                  {user.role}
-                </span>
-              )}
             </div>
             <NavLink
               to="/profile"

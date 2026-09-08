@@ -13,7 +13,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.database.session import Base, get_db
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.models.agent import AIAgent, AgentStatus, LifecycleStatus
 from app.models.room import OfficeRoom
 from app.models.task import Task, TaskStatus, TaskType, TaskPriority
@@ -76,7 +76,7 @@ def db():
 
 @pytest.fixture
 def ceo(db):
-    user = User(id=uuid4(), email="ceo@test.com", name="CEO", role=UserRole.CEO, is_active=True)
+    user = User(id=uuid4(), email="ceo@test.com", name="CEO", role="user", is_active=True)
     db.add(user)
     db.flush()
     return user
@@ -84,7 +84,7 @@ def ceo(db):
 
 @pytest.fixture
 def admin(db):
-    user = User(id=uuid4(), email="admin@test.com", name="Admin", role=UserRole.ADMIN, is_active=True)
+    user = User(id=uuid4(), email="admin@test.com", name="Admin", role="user", is_active=True)
     db.add(user)
     db.flush()
     return user
@@ -92,7 +92,7 @@ def admin(db):
 
 @pytest.fixture
 def regular_user(db):
-    user = User(id=uuid4(), email="user@test.com", name="User", role=UserRole.USER, is_active=True)
+    user = User(id=uuid4(), email="user@test.com", name="User", role="user", is_active=True)
     db.add(user)
     db.flush()
     return user
@@ -100,7 +100,7 @@ def regular_user(db):
 
 @pytest.fixture
 def inactive_user(db):
-    user = User(id=uuid4(), email="inactive@test.com", name="Inactive", role=UserRole.USER, is_active=False)
+    user = User(id=uuid4(), email="inactive@test.com", name="Inactive", role="user", is_active=False)
     db.add(user)
     db.flush()
     return user
@@ -136,58 +136,61 @@ class TestAuthentication:
 
 
 # ---------------------------------------------------------------------------
-# 2. Authorization / RBAC Tests
+# 2. Ownership / Scoping Tests (roles were removed — every account is a plain
+#    user; cross-account access must fail with 403/404 everywhere)
 # ---------------------------------------------------------------------------
 
 class TestAuthorization:
     def test_user_cannot_approve(self, client, regular_user):
-        resp = client.post("/api/v1/approvals/test-id/approve", headers=_headers(regular_user))
-        assert resp.status_code == 403
+        from uuid import uuid4
+        resp = client.post(f"/api/v1/approvals/{uuid4()}/approve", headers=_headers(regular_user))
+        assert resp.status_code in (403, 404)
 
     def test_user_cannot_reject(self, client, regular_user):
-        resp = client.post("/api/v1/approvals/test-id/reject", headers=_headers(regular_user))
-        assert resp.status_code == 403
-
-    def test_ceo_can_approve(self, client, ceo):
         from uuid import uuid4
-        resp = client.post(f"/api/v1/approvals/{uuid4()}/approve", headers=_headers(ceo))
+        resp = client.post(f"/api/v1/approvals/{uuid4()}/reject", headers=_headers(regular_user))
+        assert resp.status_code in (403, 404)
+
+    def test_owner_of_missing_agent_gets_404_on_approve(self, client, regular_user):
+        from uuid import uuid4
+        resp = client.post(f"/api/v1/approvals/{uuid4()}/approve", headers=_headers(regular_user))
         assert resp.status_code in (200, 404)  # 404 = approval not found, but auth passed
 
-    def test_user_cannot_access_ceo_dashboard(self, client, regular_user):
+    def test_any_user_can_access_dashboard_summary(self, client, regular_user):
         resp = client.get("/api/v1/ceo/dashboard/summary", headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_user_cannot_access_ceo_inbox(self, client, regular_user):
+    def test_any_user_can_access_inbox(self, client, regular_user):
         resp = client.get("/api/v1/ceo/inbox/", headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_user_cannot_create_agent(self, client, regular_user):
+    def test_user_can_create_agent(self, client, regular_user):
         resp = client.post("/api/v1/agents/", json={"name": "Test", "role": "assistant"}, headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_user_cannot_create_tool(self, client, regular_user):
+    def test_user_can_create_tool(self, client, regular_user):
         resp = client.post("/api/v1/tools/", json={"name": "test", "display_name": "Test", "category": "general"}, headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_user_cannot_create_risk_rule(self, client, regular_user):
+    def test_user_can_create_risk_rule(self, client, regular_user):
         resp = client.post("/api/v1/risk-rules/", json={"name": "test", "risk_level": "high"}, headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_user_cannot_access_audit_logs(self, client, regular_user):
+    def test_user_can_access_audit_logs(self, client, regular_user):
         resp = client.get("/api/v1/audit/", headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_user_cannot_create_permission(self, client, regular_user):
+    def test_user_can_create_permission(self, client, regular_user):
         resp = client.post("/api/v1/permissions/", json={"name": "test.perm", "category": "test"}, headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_user_cannot_hire_agent(self, client, regular_user):
+    def test_user_can_hire_agent(self, client, regular_user):
         resp = client.post("/api/v1/hiring/hire", json={"template_id": str(uuid4()), "name": "Test"}, headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code in (200, 400, 404)
 
-    def test_user_cannot_create_integration(self, client, regular_user):
+    def test_user_can_create_integration(self, client, regular_user):
         resp = client.post("/api/v1/integrations/", json={"name": "test", "display_name": "Test", "auth_type": "api_key"}, headers=_headers(regular_user))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
 
 # ---------------------------------------------------------------------------
@@ -196,7 +199,7 @@ class TestAuthorization:
 
 class TestIDOR:
     def test_user_cannot_access_other_notification(self, client, db, regular_user):
-        other_user = User(id=uuid4(), email="other@test.com", name="Other", role=UserRole.USER, is_active=True)
+        other_user = User(id=uuid4(), email="other@test.com", name="Other", role="user", is_active=True)
         db.add(other_user)
         db.flush()
 
@@ -211,7 +214,7 @@ class TestIDOR:
         assert resp.status_code == 403
 
     def test_user_cannot_delete_other_notification(self, client, db, regular_user):
-        other_user = User(id=uuid4(), email="other2@test.com", name="Other2", role=UserRole.USER, is_active=True)
+        other_user = User(id=uuid4(), email="other2@test.com", name="Other2", role="user", is_active=True)
         db.add(other_user)
         db.flush()
 
@@ -227,7 +230,7 @@ class TestIDOR:
 
     def test_user_cannot_access_other_email_account(self, client, db, regular_user):
         from app.utils.encryption import encrypt_field
-        other_user = User(id=uuid4(), email="other3@test.com", name="Other3", role=UserRole.USER, is_active=True)
+        other_user = User(id=uuid4(), email="other3@test.com", name="Other3", role="user", is_active=True)
         db.add(other_user)
         db.flush()
 
@@ -246,7 +249,7 @@ class TestIDOR:
 
     def test_user_cannot_update_other_email_account(self, client, db, regular_user):
         from app.utils.encryption import encrypt_field
-        other_user = User(id=uuid4(), email="other4@test.com", name="Other4", role=UserRole.USER, is_active=True)
+        other_user = User(id=uuid4(), email="other4@test.com", name="Other4", role="user", is_active=True)
         db.add(other_user)
         db.flush()
 
@@ -265,7 +268,7 @@ class TestIDOR:
 
     def test_user_cannot_delete_other_email_account(self, client, db, regular_user):
         from app.utils.encryption import encrypt_field
-        other_user = User(id=uuid4(), email="other5@test.com", name="Other5", role=UserRole.USER, is_active=True)
+        other_user = User(id=uuid4(), email="other5@test.com", name="Other5", role="user", is_active=True)
         db.add(other_user)
         db.flush()
 
@@ -283,7 +286,7 @@ class TestIDOR:
         assert resp.status_code == 403
 
     def test_user_cannot_access_other_integration_account(self, client, db, regular_user):
-        other_user = User(id=uuid4(), email="other6@test.com", name="Other6", role=UserRole.USER, is_active=True)
+        other_user = User(id=uuid4(), email="other6@test.com", name="Other6", role="user", is_active=True)
         db.add(other_user)
         db.flush()
 
@@ -309,7 +312,7 @@ class TestIDOR:
         db.add(notif)
         db.flush()
 
-        other_user = User(id=uuid4(), email="other7@test.com", name="Other7", role=UserRole.USER, is_active=True)
+        other_user = User(id=uuid4(), email="other7@test.com", name="Other7", role="user", is_active=True)
         db.add(other_user)
         db.flush()
 

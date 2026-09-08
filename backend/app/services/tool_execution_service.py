@@ -62,13 +62,36 @@ class EmailReplyGuard:
 
     # Marker stored in EmailMessage.category for guard rows
     GUARD_CATEGORY = "reply_guard"
+    # Telegram (account + bot send_message) guard rows use their own category
+    # so IMAP/Gmail uids can never collide with tg message ids.
+    TELEGRAM_GUARD_CATEGORY = "reply_guard_telegram"
+
+    @staticmethod
+    def guard_category(action: str, tool_name: Optional[str] = None) -> Optional[str]:
+        """Guard category for a send action, or None when not guarded.
+
+        send_email is always guarded; send_message only for the Telegram
+        messaging tools (account MTProto + Bot API — the runtime tags their
+        replies with `_reply_to_message_id`, so untagged sends pass through
+        untouched).
+        """
+        if action == "send_email":
+            return EmailReplyGuard.GUARD_CATEGORY
+        if action == "send_message" and tool_name in (
+            "telegram_account_messaging",
+            "telegram_messaging",
+        ):
+            return EmailReplyGuard.TELEGRAM_GUARD_CATEGORY
+        return None
 
     @staticmethod
     def extract_source_id(parameters: Optional[Dict[str, Any]]) -> Optional[str]:
         """Pull the source message id out of send parameters.
 
         The runtime injects `_reply_to_message_id` into send_email parameters
-        (the Gmail message id / IMAP uid of the email being replied to).
+        (the Gmail message id / IMAP uid of the email being replied to) and
+        into telegram send_message parameters ("tg:..." for account replies,
+        "tgbot:..." for bot replies).
         """
         if not parameters:
             return None
@@ -79,13 +102,13 @@ class EmailReplyGuard:
     def extract_recipient(parameters: Optional[Dict[str, Any]]) -> Optional[str]:
         if not parameters:
             return None
-        to = parameters.get("to") or ""
+        to = parameters.get("to") or parameters.get("chat_id") or ""
         return str(to).strip() or None
 
     def __init__(self, db: Session):
         self.db = db
 
-    def has_replied(self, source_message_id: str) -> bool:
+    def has_replied(self, source_message_id: str, category: Optional[str] = None) -> bool:
         """True when a reply for this source message was already sent/queued."""
         from app.models.email import EmailMessage
 
@@ -93,13 +116,13 @@ class EmailReplyGuard:
             self.db.query(EmailMessage)
             .filter(
                 EmailMessage.conversation_id == source_message_id,
-                EmailMessage.category == self.GUARD_CATEGORY,
+                EmailMessage.category == (category or self.GUARD_CATEGORY),
             )
             .first()
             is not None
         )
 
-    def record_reply(self, source_message_id: str, recipient: Optional[str]) -> None:
+    def record_reply(self, source_message_id: str, recipient: Optional[str], category: Optional[str] = None) -> None:
         """Persist a reply-guard row so a second send is impossible."""
         from app.models.email import EmailMessage, EmailStatus
 
@@ -110,7 +133,7 @@ class EmailReplyGuard:
             body="",
             status=EmailStatus.REPLIED,
             conversation_id=source_message_id,
-            category=self.GUARD_CATEGORY,
+            category=category or self.GUARD_CATEGORY,
             account_id=None,
         )
         self.db.add(guard_row)
@@ -221,15 +244,16 @@ class ToolExecutionService:
                     execution_context=execution_context,
                 )
 
-            # Step 10.5: Anti-duplicate guard for outgoing emails — the last
-            # line of defense against replying twice to the same message.
-            if action == "send_email":
+            # Step 10.5: Anti-duplicate guard for outgoing emails/telegrams —
+            # the last line of defense against replying twice to the same message.
+            guard_category = EmailReplyGuard.guard_category(action, tool_name)
+            if guard_category:
                 guard = EmailReplyGuard(db=self.db)
                 source_id = guard.extract_source_id(parameters)
-                if source_id and guard.has_replied(source_id):
+                if source_id and guard.has_replied(source_id, guard_category):
                     logger.warning(
-                        "Duplicate send_email blocked (already replied to source message)",
-                        extra={"agent_id": str(agent_id), "source_message_id": source_id},
+                        "Duplicate send blocked (already replied to source message)",
+                        extra={"agent_id": str(agent_id), "source_message_id": source_id, "action": action},
                     )
                     self._audit_log(
                         agent_id=agent_id,
@@ -251,11 +275,11 @@ class ToolExecutionService:
 
             # Step 11.5: Record the reply so future sends to the same source
             # message are blocked (only after a successful real send).
-            if action == "send_email" and result.get("success"):
+            if guard_category and result.get("success"):
                 guard = EmailReplyGuard(db=self.db)
                 source_id = guard.extract_source_id(parameters)
                 if source_id:
-                    guard.record_reply(source_id, guard.extract_recipient(parameters))
+                    guard.record_reply(source_id, guard.extract_recipient(parameters), guard_category)
 
             # Step 12: Audit log
             self._audit_log(
@@ -364,13 +388,14 @@ class ToolExecutionService:
 
         # Anti-duplicate guard on the approval path too: the CEO-approved send
         # must not double-fire if the guard row appeared after approval creation.
-        if action_name == "send_email":
+        approval_guard_category = EmailReplyGuard.guard_category(action_name, tool_name_str)
+        if approval_guard_category:
             guard = EmailReplyGuard(db=self.db)
             source_id = guard.extract_source_id(parameters)
-            if source_id and guard.has_replied(source_id):
+            if source_id and guard.has_replied(source_id, approval_guard_category):
                 logger.warning(
-                    "Approved send_email blocked — reply already sent for source message",
-                    extra={"agent_id": str(approval.agent_id), "source_message_id": source_id},
+                    "Approved send blocked — reply already sent for source message",
+                    extra={"agent_id": str(approval.agent_id), "source_message_id": source_id, "action": action_name},
                 )
                 return {
                     "success": True,
@@ -383,11 +408,11 @@ class ToolExecutionService:
         result = self._execute_provider_action(approval.agent_id, tool_name_str, action_name, parameters)
 
         # Record the successful approved reply for the duplicate guard.
-        if action_name == "send_email" and result.get("success"):
+        if approval_guard_category and result.get("success"):
             guard = EmailReplyGuard(db=self.db)
             source_id = guard.extract_source_id(parameters)
             if source_id:
-                guard.record_reply(source_id, guard.extract_recipient(parameters))
+                guard.record_reply(source_id, guard.extract_recipient(parameters), approval_guard_category)
 
         self._audit_log(
             agent_id=approval.agent_id,
@@ -653,13 +678,14 @@ class ToolExecutionService:
 
         # Anti-duplicate guard: never create a second approval request for a
         # reply that was already sent for the same source message.
-        if action == "send_email":
+        guard_category = EmailReplyGuard.guard_category(action, tool_name)
+        if guard_category:
             guard = EmailReplyGuard(db=self.db)
             source_id = guard.extract_source_id(parameters)
-            if source_id and guard.has_replied(source_id):
+            if source_id and guard.has_replied(source_id, guard_category):
                 logger.warning(
-                    "Duplicate send_email (approval path) blocked — already replied",
-                    extra={"agent_id": str(agent_id), "source_message_id": source_id},
+                    "Duplicate send (approval path) blocked — already replied",
+                    extra={"agent_id": str(agent_id), "source_message_id": source_id, "action": action},
                 )
                 return {
                     "success": True,
@@ -830,7 +856,7 @@ class ToolExecutionService:
         self.db.flush()
         agent = self.db.query(AIAgent).filter(AIAgent.id == agent_id).first()
         self._create_notification(
-            user_id=None, type="approval_needed",
+            user_id=agent.user_id if agent else None, type="approval_needed",
             title=f"Approval Required: {action}",
             message=f"Agent {agent.name if agent else 'Unknown'} requests approval for: {action} using {tool_name}",
             reference_type="approval", reference_id=approval.id,
@@ -867,15 +893,11 @@ class ToolExecutionService:
         )
 
     def _create_notification(self, user_id: Optional[UUID], type: str, title: str, message: str, reference_type: Optional[str] = None, reference_id: Optional[UUID] = None):
-        from app.models.user import User, UserRole
         if user_id is None:
-            ceo = self.db.query(User).filter(User.role == UserRole.CEO).first()
-            if ceo:
-                user_id = ceo.id
-        if user_id:
-            NotificationService(self.db).create_notification(
-                NotificationCreate(user_id=user_id, type=type, title=title, message=message, reference_type=reference_type, reference_id=reference_id)
-            )
+            return
+        NotificationService(self.db).create_notification(
+            NotificationCreate(user_id=user_id, type=type, title=title, message=message, reference_type=reference_type, reference_id=reference_id)
+        )
 
     @staticmethod
     def _fire_async(coro):
@@ -957,12 +979,28 @@ class ToolExecutionService:
         except Exception as e:
             logger.warning("Failed to log tool room activity: %s", e)
 
-    def get_pending_approvals(self, limit: int = 50) -> list:
-        return self.db.query(Approval).filter(Approval.status == "pending").order_by(Approval.created_at.desc()).limit(limit).all()
+    def get_pending_approvals(self, limit: int = 50, user_id: Optional[UUID] = None) -> list:
+        query = self.db.query(Approval).filter(Approval.status == "pending")
+        if user_id is not None:
+            from app.models.agent import AIAgent
+            agent_ids = [a.id for a in self.db.query(AIAgent.id).filter(AIAgent.user_id == user_id).all()]
+            if not agent_ids:
+                return []
+            query = query.filter(Approval.agent_id.in_(agent_ids))
+        return query.order_by(Approval.created_at.desc()).limit(limit).all()
 
-    def get_approval_stats(self) -> Dict[str, Any]:
-        from sqlalchemy import func
-        pending = self.db.query(Approval).filter(Approval.status == "pending").count()
-        approved = self.db.query(Approval).filter(Approval.status == "approved").count()
-        rejected = self.db.query(Approval).filter(Approval.status == "rejected").count()
+    def get_approval_stats(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
+        def _count(status: str) -> int:
+            query = self.db.query(Approval).filter(Approval.status == status)
+            if user_id is not None:
+                from app.models.agent import AIAgent
+                agent_ids = [a.id for a in self.db.query(AIAgent.id).filter(AIAgent.user_id == user_id).all()]
+                if not agent_ids:
+                    return 0
+                query = query.filter(Approval.agent_id.in_(agent_ids))
+            return query.count()
+
+        pending = _count("pending")
+        approved = _count("approved")
+        rejected = _count("rejected")
         return {"pending": pending, "approved": approved, "rejected": rejected, "total": pending + approved + rejected}

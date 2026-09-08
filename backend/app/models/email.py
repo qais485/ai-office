@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Enum, ForeignKey, Text, Index
+from sqlalchemy import Column, String, Enum, ForeignKey, Text, Index, text
 from sqlalchemy.dialects.postgresql import UUID
 import enum
 
@@ -44,7 +44,7 @@ class EmailMessage(BaseModel):
             "uq_email_reply_guard_conversation",
             conversation_id,
             unique=True,
-            postgresql_where=Text("category = 'reply_guard'"),
-            sqlite_where=Text("category = 'reply_guard'"),
+            postgresql_where=text("category = 'reply_guard'"),
+            sqlite_where=text("category = 'reply_guard'"),
         ),
     )

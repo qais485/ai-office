@@ -20,7 +20,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database.session import Base, get_db
 from app.core.config import settings
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.models.agent import AIAgent, AgentStatus, LifecycleStatus
 from app.models.room import OfficeRoom, RoomStatus, RoomVisualStatus
 from app.models.task import Task, TaskStatus, TaskPriority, TaskType
@@ -146,7 +146,7 @@ def ceo_user(api_db):
         id=uuid4(),
         email="ceo@test.com",
         name="Test CEO",
-        role=UserRole.CEO,
+        role="user",
         is_active=True,
     )
     api_db.add(user)
@@ -160,7 +160,7 @@ def admin_user(api_db):
         id=uuid4(),
         email="admin@test.com",
         name="Test Admin",
-        role=UserRole.ADMIN,
+        role="user",
         is_active=True,
     )
     api_db.add(user)
@@ -174,7 +174,7 @@ def regular_user(api_db):
         id=uuid4(),
         email="user@test.com",
         name="Test User",
-        role=UserRole.USER,
+        role="user",
         is_active=True,
     )
     api_db.add(user)
@@ -265,9 +265,10 @@ def sample_room(api_db):
 
 
 @pytest.fixture
-def sample_agent(api_db, sample_room):
+def sample_agent(api_db, sample_room, ceo_user):
     agent = AIAgent(
         id=uuid4(),
+        user_id=ceo_user.id,
         name="Test Agent",
         role="assistant",
         description="A test agent",

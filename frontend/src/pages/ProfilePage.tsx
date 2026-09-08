@@ -74,16 +74,6 @@ const ProfilePage = () => {
             <p className="mt-1 text-xs text-white/40">Email is managed by your Google account.</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-white/80 mb-1">Role</label>
-            <input
-              type="text"
-              value={user.role.toUpperCase()}
-              disabled
-              className="w-full px-3 py-2 border border-white/10 rounded-lg text-sm bg-white/[0.04] text-white/50 cursor-not-allowed"
-            />
-          </div>
-
           <div className="pt-2">
             <button
               type="submit"

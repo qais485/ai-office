@@ -2,7 +2,8 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'ceo' | 'admin' | 'user'
+  /** Legacy field: roles were removed — every account is a plain user. */
+  role: 'user'
   is_active: boolean
   avatar_url: string | null
   created_at: string

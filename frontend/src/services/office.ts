@@ -304,8 +304,31 @@ export const officeService = {
 
   async connectIntegration(integrationId: string, credentials: Record<string, unknown>, displayName?: string) {
     const params = new URLSearchParams({ integration_id: integrationId })
-    if (displayName) params.append('display_name', displayName)
-    return api.post<IntegrationAccount>(`integrations/accounts/connect?${params.toString()}`, credentials)
+    // Backend contract: POST /integrations/accounts/connect?integration_id=...
+    // with body { credentials: {...}, display_name? } — credentials were
+    // previously posted flat, which FastAPI rejected with 422.
+    const body: Record<string, unknown> = { credentials }
+    if (displayName) body.display_name = displayName
+    return api.post<IntegrationAccount>(`integrations/accounts/connect?${params.toString()}`, body)
+  },
+
+  async telegramLoginStart(integrationId: string, data: { api_id: string; api_hash: string; phone: string }) {
+    return api.post<{ status: string; phone: string; code_length?: number }>(
+      `integrations/accounts/telegram-login/start?integration_id=${integrationId}`, data)
+  },
+
+  async telegramLoginVerifyCode(integrationId: string, code: string) {
+    return api.post<{ status: string; username?: string; name?: string; account_id?: string }>(
+      `integrations/accounts/telegram-login/verify-code?integration_id=${integrationId}`, { code })
+  },
+
+  async telegramLoginVerifyPassword(integrationId: string, password: string) {
+    return api.post<{ status: string; username?: string; name?: string; account_id?: string }>(
+      `integrations/accounts/telegram-login/verify-password?integration_id=${integrationId}`, { password })
+  },
+
+  async telegramLoginCancel(integrationId: string) {
+    return api.post(`integrations/accounts/telegram-login/cancel?integration_id=${integrationId}`)
   },
 
   async disconnectIntegration(integrationId: string) {

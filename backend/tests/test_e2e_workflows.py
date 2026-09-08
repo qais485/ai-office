@@ -10,7 +10,7 @@ import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.models.agent import AIAgent, AgentStatus, LifecycleStatus
 from app.models.tool import AgentTool
 from app.models.permission import Permission
@@ -50,7 +50,7 @@ def _make_ceo(db) -> User:
         id=uuid4(),
         email=f"ceo_{uuid4().hex[:8]}@example.com",
         name="E2E CEO",
-        role=UserRole.CEO,
+        role="user",
         is_active=True,
     )
     db.add(ceo)

@@ -27,6 +27,10 @@ from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
+# Inbound Telegram event types (MTProto account + Bot API) — the runtime
+# treats both identically: bot-sender skip, chat pinning, reply guard tag.
+_TELEGRAM_EVENT_TYPES = ("telegram_message_received", "telegram_bot_message_received")
+
 
 class AgentLoop:
     """Execution loop for a single agent. Polls for pending triggers and processes them."""
@@ -347,6 +351,8 @@ class AgentLoop:
             # Human-readable context depending on trigger type
             if trigger_type == "integration" and payload.get("subject"):
                 context = f"email from {payload.get('from_address', 'unknown')} — '{payload.get('subject')}'"
+            elif trigger_type == "integration" and payload.get("message_id") and payload.get("chat_id"):
+                context = f"Telegram message from {payload.get('from_address', 'unknown')} in '{payload.get('chat_title', 'chat')}'"
             elif payload.get("instruction"):
                 context = f"instruction: {payload['instruction']}"
             else:
@@ -418,22 +424,39 @@ class AgentLoop:
 
         # 2) Pure automated senders (noreply/notifications/...) never need a
         #    decision — save the whole call instead of paying for a null action.
+        #    Telegram: bot senders are always skipped (no bot-to-bot loops).
         payload = trigger.payload or {}
         if (
             trigger.trigger_type.value == "integration"
-            and trigger.source_event_type == "email_received"
-            and settings.LLM_SKIP_AUTOMATED_SENDERS
+            and (
+                (
+                    trigger.source_event_type == "email_received"
+                    and settings.LLM_SKIP_AUTOMATED_SENDERS
+                )
+                or trigger.source_event_type in _TELEGRAM_EVENT_TYPES
+            )
         ):
             from_addr = payload.get("from_address", "")
-            if self._is_automated_sender(from_addr):
+            if trigger.source_event_type == "email_received":
+                if settings.LLM_SKIP_AUTOMATED_SENDERS and self._is_automated_sender(from_addr):
+                    trigger_service.update_execution(
+                        execution,
+                        llm_reasoning=f"Skipped: automated sender ({from_addr})",
+                        selected_action=None,
+                    )
+                    return {
+                        "success": True,
+                        "message": f"Automated email from {from_addr}; no reasoning needed",
+                    }
+            elif payload.get("is_bot"):
                 trigger_service.update_execution(
                     execution,
-                    llm_reasoning=f"Skipped: automated sender ({from_addr})",
+                    llm_reasoning=f"Skipped: bot sender ({from_addr})",
                     selected_action=None,
                 )
                 return {
                     "success": True,
-                    "message": f"Automated email from {from_addr}; no reasoning needed",
+                    "message": f"Bot message from {from_addr}; no reasoning needed",
                 }
 
         prompt = self._build_reasoning_prompt(agent, trigger, goals, rules, tools)
@@ -470,17 +493,40 @@ class AgentLoop:
                 if source_id:
                     parameters["_reply_to_message_id"] = str(source_id)
 
+            # Telegram replies: pin the reply to the source chat and tag the
+            # source message so the reply guard can block duplicate sends.
+            # Account replies: tg:<chat>:<msg>; Bot replies: tgbot:<chat>:<msg>
+            # (separate guard namespaces per channel).
+            elif (
+                action_name == "send_message"
+                and trigger.source_event_type in _TELEGRAM_EVENT_TYPES
+            ):
+                chat_id = str(payload.get("chat_id") or "").strip()
+                if chat_id:
+                    parameters["chat_id"] = chat_id
+                    source_id = payload.get("message_id") or trigger.source_event_id
+                    if source_id:
+                        prefix = (
+                            "tgbot"
+                            if trigger.source_event_type == "telegram_bot_message_received"
+                            else "tg"
+                        )
+                        parameters["_reply_to_message_id"] = f"{prefix}:{chat_id}:{source_id}"
+
             if tool_name and tool_name not in tools:
                 return {"success": False, "error": f"Tool '{tool_name}' not assigned to agent"}
 
             if tool_name and action_name:
                 trigger_service.update_execution(execution, status=ExecutionStatus.EXECUTING)
 
-                # Email replies classified as AUTOMATED must get CEO approval
-                # before actually sending (per CEO policy).
+                # Email/Telegram replies classified as AUTOMATED must get CEO
+                # approval before actually sending (per CEO policy).
                 force_approval = (
                     trigger.trigger_type.value == "integration"
-                    and trigger.source_event_type == "email_received"
+                    and (
+                        trigger.source_event_type == "email_received"
+                        or trigger.source_event_type in _TELEGRAM_EVENT_TYPES
+                    )
                     and str(decision.get("email_class", "")).upper() == "AUTOMATED"
                 )
 
@@ -500,9 +546,14 @@ class AgentLoop:
                 )
                 if force_approval and result.get("requires_approval"):
                     self._mark_task_waiting_approval(db, task, result.get("approval_id"))
+                    channel = (
+                        "Telegram"
+                        if trigger.source_event_type in _TELEGRAM_EVENT_TYPES
+                        else "email"
+                    )
                     return {
                         "success": True,
-                        "message": "Reply drafted but held for CEO approval (AUTOMATED email)",
+                        "message": f"Reply drafted but held for CEO approval (AUTOMATED {channel} message)",
                         "approval_id": result.get("approval_id"),
                         "requires_approval": True,
                     }
@@ -549,6 +600,31 @@ Body:
 {body}
 
 Reply with JSON only. For email events always include "email_class" (HUMAN = written by a real person, AUTOMATED = system/newsletter/noreply). If AUTOMATED, still send a brief reply via send_email; the platform automatically holds AUTOMATED replies for CEO approval."""
+            elif event_type in _TELEGRAM_EVENT_TYPES and "message_id" in payload:
+                is_bot_channel = event_type == "telegram_bot_message_received"
+                reply_tool = (
+                    "telegram_messaging" if is_bot_channel else "telegram_account_messaging"
+                )
+                from_addr = payload.get("from_address", "unknown")
+                chat_title = payload.get("chat_title", "Private chat")
+                body = payload.get("text", "")
+
+                from app.core.config import settings as _settings
+                max_body = _settings.LLM_EMAIL_BODY_MAX_CHARS
+                if len(body) > max_body:
+                    body = body[:max_body] + "...[truncated]"
+
+                channel = "Telegram Bot chat" if is_bot_channel else "Telegram"
+                trigger_context = f"""Customer message received via {channel}.
+
+From: {from_addr}
+Chat: {chat_title} (chat_id: {payload.get('chat_id', '')})
+Message ID: {payload.get('message_id')}
+
+Text:
+{body}
+
+Reply with JSON only. For these messages always include "email_class" (HUMAN = a real customer, AUTOMATED = bot/system message). To reply, use action="send_message", tool="{reply_tool}" and echo the SAME chat_id in parameters. Answer from your knowledge when you can. If AUTOMATED, still draft a brief reply; the platform automatically holds AUTOMATED replies for CEO approval."""
             else:
                 trigger_context = f"""Integration event received:
 Integration: {integration_name}
@@ -571,7 +647,11 @@ This is a periodic run. Check if any action is needed.
 
         # One-line tool hint — full JSON schema examples removed to save tokens
         tool_hints = ""
-        if "email_writer" in tools or "email_reader" in tools:
+        if "telegram_account_messaging" in tools:
+            tool_hints = 'To reply on Telegram: action="send_message", tool="telegram_account_messaging", parameters={chat_id, text}.'
+        elif "telegram_messaging" in tools:
+            tool_hints = 'To reply on Telegram via the bot: action="send_message", tool="telegram_messaging", parameters={chat_id, text}.'
+        elif "email_writer" in tools or "email_reader" in tools:
             tool_hints = 'To reply by email: action="send_email", tool="email_writer", parameters={to, subject, body}.'
         elif "gmail" in [t.lower() for t in tools]:
             tool_hints = 'To reply by email: action="send_email", tool="gmail", parameters={to, subject, body}.'

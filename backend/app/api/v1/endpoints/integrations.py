@@ -9,12 +9,14 @@ from app.database.session import get_db
 from app.schemas.integration import (
     IntegrationCreate, IntegrationResponse,
     IntegrationAccountCreate, IntegrationAccountUpdate, IntegrationAccountResponse,
-    ConnectRequest, OAuth2AuthorizeResponse
+    ConnectRequest, OAuth2AuthorizeResponse,
+    TelegramLoginStartRequest, TelegramLoginCodeRequest, TelegramLoginPasswordRequest
 )
 from app.services.integration_service import IntegrationService
 from app.services.oauth2_service import OAuth2Service
-from app.api.deps import require_role, get_current_active_user
-from app.models.user import User, UserRole
+from app.services.telegram_login_service import TelegramLoginService, TelegramLoginError
+from app.api.deps import get_current_active_user
+from app.models.user import User
 from app.core.config import settings
 
 import logging
@@ -51,7 +53,7 @@ async def get_integration(
 async def create_integration(
     integration: IntegrationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.CEO, UserRole.ADMIN))
+    current_user: User = Depends(get_current_active_user)
 ):
     service = IntegrationService(db)
     created = service.create_integration(integration)
@@ -124,6 +126,63 @@ async def disconnect_account(
         raise HTTPException(status_code=404, detail="Integration account not found")
     logger.info("Disconnected integration %s for user %s", integration_id, current_user.id)
     return {"detail": "Integration disconnected"}
+
+
+# --- Telegram Account interactive login (api_id + api_hash -> code -> 2FA) ---
+
+@router.post("/accounts/telegram-login/start")
+async def telegram_login_start(
+    integration_id: UUID,
+    data: TelegramLoginStartRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    service = TelegramLoginService(db)
+    try:
+        return service.start_login(current_user.id, integration_id, data.api_id, data.api_hash, data.phone)
+    except TelegramLoginError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/accounts/telegram-login/verify-code")
+async def telegram_login_verify_code(
+    integration_id: UUID,
+    data: TelegramLoginCodeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    service = TelegramLoginService(db)
+    try:
+        return service.verify_code(current_user.id, integration_id, data.code)
+    except TelegramLoginError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/accounts/telegram-login/verify-password")
+async def telegram_login_verify_password(
+    integration_id: UUID,
+    data: TelegramLoginPasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    service = TelegramLoginService(db)
+    try:
+        return service.verify_password(current_user.id, integration_id, data.password)
+    except TelegramLoginError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/accounts/telegram-login/cancel")
+async def telegram_login_cancel(
+    integration_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    service = TelegramLoginService(db)
+    try:
+        return service.cancel_login(current_user.id, integration_id)
+    except TelegramLoginError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @router.put("/accounts/{account_id}", response_model=IntegrationAccountResponse)

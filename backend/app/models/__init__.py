@@ -30,6 +30,8 @@ from app.models.agent_trigger import AgentTrigger, TriggerType, TriggerStatus
 from app.models.trigger_execution import TriggerExecution, ExecutionStatus
 from app.models.gmail_sync_state import GmailSyncState
 from app.models.gmail_execution import GmailExecution, GmailExecutionStatus
+from app.models.telegram_sync_state import TelegramSyncState
+from app.models.telegram_bot_sync_state import TelegramBotSyncState
 
 __all__ = [
     "Base", "BaseModel",
@@ -44,4 +46,6 @@ __all__ = [
     "TriggerExecution", "ExecutionStatus",
     "GmailSyncState",
     "GmailExecution", "GmailExecutionStatus",
+    "TelegramSyncState",
+    "TelegramBotSyncState",
 ]

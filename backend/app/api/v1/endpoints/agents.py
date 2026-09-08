@@ -1,11 +1,11 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.schemas.agent import AgentCreate, AgentUpdate, AgentResponse
 from app.services.agent_service import AgentService
-from app.api.deps import get_current_active_user, require_role
-from app.models.user import User, UserRole
+from app.api.deps import get_current_active_user
+from app.models.user import User
 
 import logging
 
