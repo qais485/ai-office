@@ -65,15 +65,17 @@ class EmailReplyGuard:
     # Telegram (account + bot send_message) guard rows use their own category
     # so IMAP/Gmail uids can never collide with tg message ids.
     TELEGRAM_GUARD_CATEGORY = "reply_guard_telegram"
+    # Discord bot send_message guard rows: snowflake ids share no namespace
+    # with telegram message ids.
+    DISCORD_GUARD_CATEGORY = "reply_guard_discord"
 
     @staticmethod
     def guard_category(action: str, tool_name: Optional[str] = None) -> Optional[str]:
         """Guard category for a send action, or None when not guarded.
 
-        send_email is always guarded; send_message only for the Telegram
-        messaging tools (account MTProto + Bot API — the runtime tags their
-        replies with `_reply_to_message_id`, so untagged sends pass through
-        untouched).
+        send_email is always guarded; send_message only for the Telegram and
+        Discord messaging tools (their runtimes tag replies with
+        `_reply_to_message_id`, so untagged sends pass through untouched).
         """
         if action == "send_email":
             return EmailReplyGuard.GUARD_CATEGORY
@@ -82,6 +84,8 @@ class EmailReplyGuard:
             "telegram_messaging",
         ):
             return EmailReplyGuard.TELEGRAM_GUARD_CATEGORY
+        if action == "send_message" and tool_name == "discord_messaging":
+            return EmailReplyGuard.DISCORD_GUARD_CATEGORY
         return None
 
     @staticmethod

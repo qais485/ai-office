@@ -100,11 +100,14 @@ class AgentService:
 
     def delete_agent(self, agent_id: UUID, user_id: Optional[UUID] = None) -> bool:
         agent = self.get_agent(agent_id, user_id=user_id)
-        if agent:
-            self.db.delete(agent)
-            self.db.commit()
-            return True
-        return False
+        if not agent:
+            return False
+        # Full dependent cleanup lives in HiringService.delete_agent — the
+        # live FKs have no ON DELETE CASCADE, so deleting the agent row
+        # directly fails on agent_triggers / tasks / approvals / etc.
+        from app.services.hiring_service import HiringService
+
+        return HiringService(self.db).delete_agent(agent.id)
 
     def _publish_status_event(self, agent: AIAgent, old_status: str) -> None:
         try:

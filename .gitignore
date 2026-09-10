@@ -3,8 +3,9 @@
 backend/.env
 frontend/.env
 
-# Markdown files in project root
+# Markdown files in project root (keep README for GitHub)
 /*.md
+!README.md
 .opencode/
 .pytest_cache/
 graphify-out/

@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = "https://api.openai.com/v1"
     LLM_MODEL: str = "gpt-4o-mini"
-    LLM_MAX_TOKENS: int = 400                      # Cap on LLM output (agent decisions are small JSON; drafts are short replies)
+    LLM_MAX_TOKENS: int = 1200                     # Cap on LLM output — chat replies (reply_text) can be long, especially in Persian
     LLM_SKIP_AUTOMATED_SENDERS: bool = True        # Skip LLM calls for noreply/notification senders entirely
     LLM_EMAIL_BODY_MAX_CHARS: int = 1000           # Max email body chars sent to the LLM (agent trigger path)
     MIN_SCHEDULED_INTERVAL_SECONDS: int = 300      # Floor for scheduled-trigger intervals (each run = 1 LLM call)
@@ -65,7 +65,12 @@ class Settings(BaseSettings):
     RAG_CHUNK_SIZE: int = 500
     RAG_CHUNK_OVERLAP: int = 100
     RAG_DEFAULT_TOP_K: int = 5
-    RAG_SIMILARITY_THRESHOLD: float = 0.3
+    # Cosine-similarity floor for vector search. The configured embedding
+    # model (nemotron via OpenRouter) systematically yields low scores —
+    # genuinely relevant question↔knowledge pairs land around 0.06-0.29, so
+    # the old 0.3 floor filtered out EVERYTHING and RAG always came back
+    # empty. 0.12 keeps the noise out without dropping real matches.
+    RAG_SIMILARITY_THRESHOLD: float = 0.12
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:5173"
@@ -89,9 +94,15 @@ class Settings(BaseSettings):
     TELEGRAM_WATCH_GROUPS: bool = False             # also watch Telegram groups (default: private chats only)
     TELEGRAM_FETCH_LIMIT: int = 20                  # messages fetched per dialog per cycle
     TELEGRAM_MAX_TRIGGERS_PER_CYCLE: int = 10       # flood cap for agent triggers per account per cycle
-    TELEGRAM_BOT_POLL_INTERVAL: int = 60            # seconds between Telegram Bot getUpdates cycles (1 min)
+    TELEGRAM_BOT_POLL_INTERVAL: int = 3             # seconds between Telegram Bot getUpdates cycles (long polling self-paces)
+    TELEGRAM_BOT_LONG_POLL_SECONDS: int = 50        # Telegram getUpdates long-poll hold (0 = short poll; 50 keeps the connection ~always open)
+    TELEGRAM_BOT_ACCOUNT_GAP_SECONDS: int = 2       # min seconds between polls of the same bot account (long polling paces itself)
     TELEGRAM_BOT_FETCH_LIMIT: int = 20              # updates fetched per bot per cycle
     TELEGRAM_BOT_MAX_TRIGGERS_PER_CYCLE: int = 10   # flood cap for bot agent triggers per account per cycle
+    DISCORD_BOT_POLL_INTERVAL: int = 5              # seconds between Discord Bot REST polls (per bot)
+    DISCORD_BOT_FETCH_LIMIT: int = 20               # messages fetched per channel per cycle
+    DISCORD_BOT_MAX_TRIGGERS_PER_CYCLE: int = 10    # flood cap for discord agent triggers per account per cycle
+    DISCORD_BOT_CHANNEL_GAP_SECONDS: int = 2        # min seconds between polls of the same channel
     AGENT_TRIGGER_WORKER_INTERVAL: int = 10         # seconds between scheduled-trigger scans
     AGENT_LOOP_INTERVAL: int = 2                    # seconds between per-agent trigger polls
 

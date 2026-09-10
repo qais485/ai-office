@@ -6,6 +6,13 @@ export const officeService = {
     return api.get<OfficeRoom[]>('rooms/')
   },
 
+  async chatWithAgent(agentId: string, message: string, timeoutSeconds = 90) {
+    return api.post<{ trigger_id: string; status: string; reply: string; tool_used?: string | null }>(
+      'triggers/chat',
+      { agent_id: agentId, message, timeout_seconds: timeoutSeconds }
+    )
+  },
+
   async getRoom(id: string) {
     return api.get<OfficeRoom>(`rooms/${id}`)
   },

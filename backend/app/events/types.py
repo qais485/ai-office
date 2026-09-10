@@ -35,6 +35,9 @@ class EventType(str, enum.Enum):
     # Telegram Bot events
     TELEGRAM_BOT_MESSAGE_RECEIVED = "telegram_bot_message_received"
 
+    # Discord Bot events
+    DISCORD_MESSAGE_RECEIVED = "discord_message_received"
+
     # Room events
     ROOM_STATUS_CHANGED = "room_status_changed"
 
@@ -244,6 +247,27 @@ class TelegramBotMessageEvent(DomainEvent):
             "message_id": self.message_id,
             "chat_id": self.chat_id,
             "chat_title": self.chat_title,
+            "sender_id": self.sender_id,
+            "text": self.text,
+            "account_id": self.account_id,
+        }
+
+
+@dataclass
+class DiscordMessageEvent(DomainEvent):
+    event_type: EventType = EventType.DISCORD_MESSAGE_RECEIVED
+    message_id: str = ""
+    channel_id: str = ""
+    channel_name: str = ""
+    sender_id: str = ""
+    text: str = ""
+    account_id: str = ""
+
+    def __post_init__(self):
+        self.data = {
+            "message_id": self.message_id,
+            "channel_id": self.channel_id,
+            "channel_name": self.channel_name,
             "sender_id": self.sender_id,
             "text": self.text,
             "account_id": self.account_id,

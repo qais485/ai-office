@@ -156,6 +156,11 @@ class HiringService:
         self.db.commit()
         self.db.refresh(agent)
         logger.info("Agent created: id=%s name=%s", agent.id, agent.name)
+
+        # Start the agent loop immediately — a freshly hired agent must not
+        # wait for the next backend restart to begin processing triggers.
+        self._sync_agent_runtime(agent, agent.lifecycle_status, LifecycleStatus.ACTIVE)
+
         return agent
 
     def _create_default_room(self, agent_name: str, user_id: Optional[UUID] = None) -> OfficeRoom:
@@ -355,6 +360,102 @@ class HiringService:
         if not agent:
             return False
 
+        # The live FKs have no ON DELETE CASCADE, so every row referencing
+        # this agent must be cleared here or Postgres rejects the delete
+        # (ForeignKeyViolation on ai_agents). Order matters for the
+        # circular tasks <-> approvals pair and trigger_executions ->
+        # agent_triggers.
+        from app.models.activity import AgentActivity
+        from app.models.agent_collaboration import AgentCollaboration
+        from app.models.agent_knowledge import AgentKnowledgeAccess
+        from app.models.agent_tool_assignment import AgentToolAssignment
+        from app.models.agent_trigger import AgentTrigger
+        from app.models.approval import Approval
+        from app.models.approval_event import ApprovalEvent
+        from app.models.email import EmailMessage
+        from app.models.integration_account import IntegrationAccount
+        from app.models.task import Task
+        from app.models.task_event import TaskEvent
+        from app.models.trigger_execution import TriggerExecution
+
+        approval_ids = [
+            a.id for a in self.db.query(Approval.id).filter(Approval.agent_id == agent_id).all()
+        ]
+        task_ids = [
+            t.id for t in self.db.query(Task.id).filter(Task.agent_id == agent_id).all()
+        ]
+
+        # Detach nullable references first (keep the history rows). Other
+        # agents' rows may also point at this agent's tasks/approvals —
+        # those links must go too or the deletes below would violate FKs.
+        if approval_ids:
+            self.db.query(Task).filter(Task.approval_id.in_(approval_ids)).update(
+                {Task.approval_id: None}, synchronize_session=False
+            )
+        if task_ids:
+            self.db.query(Approval).filter(Approval.task_id.in_(task_ids)).update(
+                {Approval.task_id: None}, synchronize_session=False
+            )
+            self.db.query(AgentActivity).filter(AgentActivity.task_id.in_(task_ids)).update(
+                {AgentActivity.task_id: None}, synchronize_session=False
+            )
+            self.db.query(AgentCollaboration).filter(AgentCollaboration.task_id.in_(task_ids)).update(
+                {AgentCollaboration.task_id: None}, synchronize_session=False
+            )
+            self.db.query(Task).filter(Task.parent_task_id.in_(task_ids)).update(
+                {Task.parent_task_id: None}, synchronize_session=False
+            )
+        self.db.query(Task).filter(Task.assigned_to_agent_id == agent_id).update(
+            {Task.assigned_to_agent_id: None}, synchronize_session=False
+        )
+        self.db.query(EmailMessage).filter(EmailMessage.agent_id == agent_id).update(
+            {EmailMessage.agent_id: None}, synchronize_session=False
+        )
+        self.db.query(IntegrationAccount).filter(IntegrationAccount.agent_id == agent_id).update(
+            {IntegrationAccount.agent_id: None}, synchronize_session=False
+        )
+
+        # Hard-delete owned child rows (deepest first).
+        self.db.query(TriggerExecution).filter(TriggerExecution.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        self.db.query(AgentTrigger).filter(AgentTrigger.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        if task_ids:
+            self.db.query(TaskEvent).filter(TaskEvent.task_id.in_(task_ids)).delete(
+                synchronize_session=False
+            )
+        self.db.query(TaskEvent).filter(TaskEvent.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        if approval_ids:
+            self.db.query(ApprovalEvent).filter(ApprovalEvent.approval_id.in_(approval_ids)).delete(
+                synchronize_session=False
+            )
+        self.db.query(ApprovalEvent).filter(ApprovalEvent.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        self.db.query(Approval).filter(Approval.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        self.db.query(Task).filter(Task.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        self.db.query(AgentActivity).filter(AgentActivity.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        self.db.query(AgentKnowledgeAccess).filter(AgentKnowledgeAccess.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        self.db.query(AgentToolAssignment).filter(AgentToolAssignment.agent_id == agent_id).delete(
+            synchronize_session=False
+        )
+        self.db.query(AgentCollaboration).filter(
+            (AgentCollaboration.from_agent_id == agent_id)
+            | (AgentCollaboration.to_agent_id == agent_id)
+        ).delete(synchronize_session=False)
+
         self.db.query(AgentPermission).filter(AgentPermission.agent_id == agent_id).delete()
         self.db.query(AgentIntegration).filter(AgentIntegration.agent_id == agent_id).delete()
 
@@ -364,6 +465,22 @@ class HiringService:
 
         self.db.delete(agent)
         self.db.commit()
+
+        # Best-effort: stop the agent's runtime loop so it doesn't keep
+        # polling the DB for triggers of a now-deleted agent.
+        try:
+            import asyncio
+
+            from app.services.agent_runtime import agent_runtime
+
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(agent_runtime.deactivate_agent(str(agent_id)))
+            else:
+                loop.run_until_complete(agent_runtime.deactivate_agent(str(agent_id)))
+        except Exception:
+            logger.debug("Runtime deactivation skipped for deleted agent %s", agent_id, exc_info=True)
+
         return True
 
     def get_agent_with_tools(self, agent_id: UUID) -> dict:

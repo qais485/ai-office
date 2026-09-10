@@ -221,6 +221,14 @@ async def lifespan(app: FastAPI):
         interval_seconds=settings.TELEGRAM_BOT_POLL_INTERVAL,
     )
 
+    # Discord Bot customer-chat monitoring job
+    from app.services.discord_bot_monitor_service import check_all_discord_bots
+    scheduler.register_job(
+        name="discord_monitoring",
+        func=check_all_discord_bots,
+        interval_seconds=settings.DISCORD_BOT_POLL_INTERVAL,
+    )
+
     # Gmail Push notification watch renewal job (if push is enabled)
     if getattr(settings, "GMAIL_PUSH_ENABLED", False):
         async def gmail_watch_renewal():

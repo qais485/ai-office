@@ -8,6 +8,7 @@ import ApprovalActions from './ApprovalActions'
 import ApprovalDetailModal from './ApprovalDetailModal'
 import PerformanceMetrics from './PerformanceMetrics'
 import LifecycleControls from './LifecycleControls'
+import AgentChatFAB from './AgentChatFAB'
 import { LogOut, LayoutGrid, ClipboardList, Clock, Shield, BarChart3, Settings, Trash2 } from 'lucide-react'
 
 const AGENT_STATUS_DOT: Record<string, string> = {
@@ -325,6 +326,9 @@ export default function RoomDashboard({ room, agents, tasks, activities, pending
           onReject={(id) => handleApprovalAction(id, 'reject')}
         />
       )}
+
+      {/* Floating chat with the room's primary agent */}
+      <AgentChatFAB agentId={primaryAgent?.id ?? null} agentName={primaryAgent?.name ?? 'Agent'} />
     </div>
   )
 }

@@ -280,7 +280,7 @@ class CEOInboxService:
             Notification.is_archived == False,
         ).count()
 
-        system_alerts = len(self._get_system_alerts())
+        system_alerts = len(self._get_system_alerts(user_id))
 
         return {
             "pending_approvals": pending_approvals,

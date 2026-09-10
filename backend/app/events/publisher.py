@@ -12,7 +12,8 @@ from app.events.types import (
     EventType, DomainEvent, AgentStatusEvent, AgentLifecycleEvent,
     AgentErrorEvent, TaskEvent, ApprovalEvent, NotificationEvent,
     EmailEvent, TelegramMessageEvent, TelegramBotMessageEvent,
-    RoomStatusEvent, IntegrationEvent, ToolExecutionEvent, ActivityEvent,
+    DiscordMessageEvent, RoomStatusEvent, IntegrationEvent,
+    ToolExecutionEvent, ActivityEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -163,6 +164,26 @@ async def publish_telegram_bot_message_received(
         message_id=str(message_id),
         chat_id=str(chat_id),
         chat_title=chat_title or "",
+        sender_id=str(sender_id or ""),
+        text=text or "",
+        account_id=str(account_id) if account_id else "",
+    )
+    await event_bus.publish(event)
+
+
+async def publish_discord_message_received(
+    message_id: str,
+    channel_id: str,
+    channel_name: str = "",
+    sender_id: str = "",
+    text: str = "",
+    account_id: UUID = None,
+) -> None:
+    """Publish DISCORD_MESSAGE_RECEIVED for an incoming Discord Bot message."""
+    event = DiscordMessageEvent(
+        message_id=str(message_id),
+        channel_id=str(channel_id),
+        channel_name=channel_name or "",
         sender_id=str(sender_id or ""),
         text=text or "",
         account_id=str(account_id) if account_id else "",

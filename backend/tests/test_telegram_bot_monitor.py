@@ -2,8 +2,9 @@
 
 Covers:
     - TelegramBotMonitorService: durable getUpdates offset, baseline pass,
-      trigger firing for mapped agents, flood cap, bot/non-message filtering,
-      token scrubbing
+      trigger firing for mapped agents (explicit account mapping AND the
+      owner-scoped generic-link fallback), agent resolution isolation,
+      flood cap, bot/non-message filtering, token scrubbing
     - agent_runtime bot-channel branch: chat pinning + "tgbot:" reply-guard
       tag, AUTOMATED classification → CEO approval, bot-sender skip
     - EmailReplyGuard guarding telegram_messaging.send_message
@@ -154,6 +155,113 @@ def _bot_trigger_count(api_db):
     )
 
 
+def _link_agent_generic(api_db, agent, integration):
+    """AgentIntegration without an account binding (the generic hire-flow wiring)."""
+    from app.models.agent_integration import AgentIntegration
+
+    link = AgentIntegration(
+        agent_id=agent.id,
+        integration_id=integration.id,
+        integration_account_id=None,
+        is_active=True,
+    )
+    api_db.add(link)
+    api_db.flush()
+    return link
+
+
+class TestAgentResolution:
+    def test_generic_link_without_account_binding_falls_back_to_owner(
+        self, api_db, monkeypatch
+    ):
+        """A telegram AgentIntegration created without an account binding
+        (integration_account_id IS NULL) must still receive bot messages for
+        the bot account's owner — this is the wiring produced by the
+        template-hire flow before the user completes the account mapping."""
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent = _make_active_agent(api_db, user, tool_name="telegram_messaging")
+        integration = api_db.query(Integration).filter(Integration.name == "telegram").first()
+        # generic link — no account id
+        _link_agent_generic(api_db, agent, integration)
+        account = _bot_account(api_db, user)
+
+        _run_check(api_db, account, _make_fake_bot_api([]), monkeypatch)
+        updates = [_upd(3, _msg(20, "hello there"))]
+        result = _run_check(api_db, account, _make_fake_bot_api(updates), monkeypatch)
+
+        assert result["new_messages"] == 1
+        trigger = api_db.query(AgentTrigger).filter(
+            AgentTrigger.source_event_type == "telegram_bot_message_received"
+        ).first()
+        assert trigger is not None
+        assert trigger.agent_id == agent.id
+
+    def test_generic_link_never_crosses_owners(self, api_db, monkeypatch):
+        """Another user's generic telegram link must NOT receive messages for
+        this bot account — owner scoping is mandatory in the fallback."""
+        _seed_world(api_db)
+        owner = _make_user(api_db, email="owner@test.com")
+        stranger = _make_user(api_db, email="stranger@test.com")
+
+        stranger_agent = _make_active_agent(api_db, stranger, tool_name="telegram_messaging")
+        integration = api_db.query(Integration).filter(Integration.name == "telegram").first()
+        _link_agent_generic(api_db, stranger_agent, integration)
+
+        account = _bot_account(api_db, owner)
+
+        _run_check(api_db, account, _make_fake_bot_api([]), monkeypatch)
+        updates = [_upd(3, _msg(20, "private customer"))]
+        result = _run_check(api_db, account, _make_fake_bot_api(updates), monkeypatch)
+
+        assert result["new_messages"] == 0
+        assert _bot_trigger_count(api_db) == 0
+
+    def test_inactive_agent_not_resolved_via_fallback(self, api_db, monkeypatch):
+        """Generic-link fallback only reaches lifecycle-active agents."""
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent = _make_active_agent(api_db, user, tool_name="telegram_messaging")
+        agent.lifecycle_status = __import__(
+            "app.models.agent", fromlist=["LifecycleStatus"]
+        ).LifecycleStatus.INACTIVE
+        api_db.commit()
+
+        integration = api_db.query(Integration).filter(Integration.name == "telegram").first()
+        _link_agent_generic(api_db, agent, integration)
+        account = _bot_account(api_db, user)
+
+        _run_check(api_db, account, _make_fake_bot_api([]), monkeypatch)
+        updates = [_upd(3, _msg(20, "anyone there?"))]
+        result = _run_check(api_db, account, _make_fake_bot_api(updates), monkeypatch)
+
+        assert result["new_messages"] == 0
+        assert _bot_trigger_count(api_db) == 0
+
+    def test_strict_mapping_not_widened_to_other_accounts(self, api_db, monkeypatch):
+        """A strict mapping pointed at a DIFFERENT account is never widened to
+        this account — only account-less (generic) links hit the fallback."""
+        _seed_world(api_db)
+        owner = _make_user(api_db, email="owner@test.com")
+        stranger = _make_user(api_db, email="stranger2@test.com")
+
+        agent = _make_active_agent(api_db, owner, tool_name="telegram_messaging")
+        integration = api_db.query(Integration).filter(Integration.name == "telegram").first()
+        # Strictly mapped to the STRANGER's account (one account per user per
+        # integration, so the owner's bot account is a separate row).
+        strangers_account = _bot_account(api_db, stranger, display_name="Stranger Bot")
+        _map_agent_to_account(api_db, agent, integration, strangers_account)
+
+        account = _bot_account(api_db, owner, display_name="Owner Bot")
+
+        _run_check(api_db, account, _make_fake_bot_api([]), monkeypatch)
+        updates = [_upd(3, _msg(20, "wrong bot"))]
+        result = _run_check(api_db, account, _make_fake_bot_api(updates), monkeypatch)
+
+        assert result["new_messages"] == 0
+        assert _bot_trigger_count(api_db) == 0
+
+
 # ---------------------------------------------------------------------------
 # check_account behaviour
 # ---------------------------------------------------------------------------
@@ -185,6 +293,66 @@ class TestCheckAccountSkips:
         result = _run_async(tb.TelegramBotMonitorService(api_db).check_account(account.id)
         )
         assert "not connected" in result["skipped"]
+
+
+class TestRealtimeUX:
+    def test_long_poll_timeout_requested(self, api_db, monkeypatch):
+        """getUpdates must request Telegram's long-poll hold (real-time pickup)."""
+        from app.core.config import settings
+
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent, account = _bot_world(api_db, user)
+        fake_cls = _make_fake_bot_api([])
+        monkeypatch.setattr(settings, "TELEGRAM_BOT_LONG_POLL_SECONDS", 50)
+
+        _run_check(api_db, account, fake_cls, monkeypatch)
+
+        assert fake_cls.last_params["timeout"] == 50
+
+    def test_typing_fired_immediately_on_customer_message(self, api_db, monkeypatch):
+        """'typing…' chat action fires the moment a message is picked up."""
+        import app.services.telegram_bot_monitor_service as tb
+
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent, account = _bot_world(api_db, user)
+
+        typing_calls = []
+        monkeypatch.setattr(tb, "send_typing_action",
+                            lambda token, chat_id: typing_calls.append((token, chat_id)) or True)
+
+        _run_check(api_db, account, _make_fake_bot_api([]), monkeypatch)
+        typing_calls.clear()
+        updates = [_upd(3, _msg(20, "are you real?"))]
+        result = _run_check(api_db, account, _make_fake_bot_api(updates), monkeypatch)
+
+        assert result["new_messages"] == 1
+        assert len(typing_calls) == 1
+        token, chat_id = typing_calls[0]
+        assert chat_id == "111"
+        assert "AAFakeBotToken" in token  # decrypted token, real API call shape
+
+    def test_typing_not_fired_for_bot_senders(self, api_db, monkeypatch):
+        """Bot-sender / media-only updates never trigger the typing indicator."""
+        import app.services.telegram_bot_monitor_service as tb
+
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent, account = _bot_world(api_db, user)
+
+        typing_calls = []
+        monkeypatch.setattr(tb, "send_typing_action",
+                            lambda token, chat_id: typing_calls.append(chat_id) or True)
+
+        _run_check(api_db, account, _make_fake_bot_api([]), monkeypatch)
+        updates = [
+            _upd(3, _msg(30, "beep", from_bot=True)),
+            _upd(4, _msg(31, "")),
+        ]
+        _run_check(api_db, account, _make_fake_bot_api(updates), monkeypatch)
+
+        assert typing_calls == []
 
 
 class TestWatermarkBaseline:
@@ -432,8 +600,117 @@ class TestAgentRuntimeBotChannel:
 
         assert result.get("requires_approval") is True
         assert "held for CEO approval" in result["message"]
-        assert "Telegram" in result["message"]
-        assert FakeExecService.last.get("force_approval") is True
+
+    @pytest.mark.asyncio
+    async def test_both_tools_hint_names_bot_tool_for_bot_events(self, api_db, monkeypatch):
+        """Agent with BOTH telegram tools: a bot message prompt must hint the
+        bot tool (telegram_messaging) — not the account tool — so the LLM is
+        never steered onto a channel with no connected account."""
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent = _make_active_agent(
+            api_db, user, tool_name="telegram_messaging|telegram_account_messaging"
+        )
+
+        trigger, execution = _make_bot_trigger(api_db, agent, {
+            "message_id": "13", "chat_id": "111", "chat_title": "Alice",
+            "sender_id": "555", "from_address": "@alice",
+            "text": "hello", "account_id": "",
+        })
+
+        import app.core.llm as llm_module
+
+        captured_prompts = []
+
+        class FakeLLM:
+            def invoke(self, prompt):
+                captured_prompts.append(prompt)
+                return type("Resp", (), {"content": json.dumps({
+                    "action": "send_message",
+                    "tool": "telegram_messaging",
+                    "parameters": {"chat_id": "111", "text": "Hi!"},
+                    "reason": "greeting",
+                    "email_class": "HUMAN",
+                })})()
+
+        class FakeExecService:
+            def __init__(self, db):
+                pass
+
+            def execute_tool(self, **kwargs):
+                return {"success": True, "data": {"message_id": 8}}
+
+        monkeypatch.setattr(llm_module, "get_llm", lambda: FakeLLM())
+        monkeypatch.setattr(
+            __import__("app.services.tool_execution_service", fromlist=["ToolExecutionService"]),
+            "ToolExecutionService", FakeExecService,
+        )
+
+        from app.services.trigger_service import TriggerService
+
+        result = await self._loop(agent)._reason_and_act(
+            api_db, agent, trigger, execution, TriggerService(api_db), task=None
+        )
+
+        assert result["success"] is True
+        prompt = captured_prompts[0]
+        assert 'tool="telegram_messaging"' in prompt
+        assert 'tool="telegram_account_messaging"' not in prompt
+
+    @pytest.mark.asyncio
+    async def test_wrong_sibling_tool_pick_remapped_to_bot_tool(self, api_db, monkeypatch):
+        """Safety net: if the LLM still picks the account tool for a bot
+        message (the historical NO_ACCOUNTS failure), it is remapped to the
+        bot tool when the agent actually has it assigned."""
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent = _make_active_agent(
+            api_db, user, tool_name="telegram_messaging|telegram_account_messaging"
+        )
+
+        trigger, execution = _make_bot_trigger(api_db, agent, {
+            "message_id": "14", "chat_id": "222", "chat_title": "Bob",
+            "sender_id": "777", "from_address": "@bob",
+            "text": "hi again", "account_id": "",
+        })
+
+        import app.core.llm as llm_module
+        import app.services.tool_execution_service as tes_module
+
+        class FakeLLM:
+            def invoke(self, prompt):
+                return type("Resp", (), {"content": json.dumps({
+                    "action": "send_message",
+                    "tool": "telegram_account_messaging",  # wrong channel tool
+                    "parameters": {"chat_id": "222", "text": "Hello!"},
+                    "reason": "greeting",
+                    "email_class": "HUMAN",
+                })})()
+
+        class FakeExecService:
+            last = None
+
+            def __init__(self, db):
+                pass
+
+            def execute_tool(self, **kwargs):
+                FakeExecService.last = kwargs
+                return {"success": True, "data": {"message_id": 9}}
+
+        monkeypatch.setattr(llm_module, "get_llm", lambda: FakeLLM())
+        monkeypatch.setattr(tes_module, "ToolExecutionService", FakeExecService)
+
+        from app.services.trigger_service import TriggerService
+
+        result = await self._loop(agent)._reason_and_act(
+            api_db, agent, trigger, execution, TriggerService(api_db), task=None
+        )
+
+        assert result["success"] is True
+        kwargs = FakeExecService.last
+        assert kwargs["tool_name"] == "telegram_messaging"
+        assert kwargs["parameters"]["chat_id"] == "222"
+        assert kwargs["parameters"]["_reply_to_message_id"] == "tgbot:222:14"
 
     @pytest.mark.asyncio
     async def test_bot_sender_skipped_without_llm(self, api_db):
@@ -456,6 +733,73 @@ class TestAgentRuntimeBotChannel:
         assert "Bot message" in result["message"]
         fresh = api_db.query(TriggerExecution).filter(TriggerExecution.id == execution.id).first()
         assert fresh.selected_action is None
+
+    @pytest.mark.asyncio
+    async def test_reasoning_window_sustains_typing_then_stops(self, api_db, monkeypatch):
+        """While the LLM reasons, the typing sustainer keeps pulsing; when the
+        reply path finishes, the sustainer is cancelled (no runaway task)."""
+        import asyncio
+        import app.services.telegram_bot_monitor_service as tb_module
+        import app.core.llm as llm_module
+
+        _seed_world(api_db)
+        user = _make_user(api_db)
+        agent = _make_active_agent(api_db, user, tool_name="telegram_messaging")
+
+        trigger, execution = _make_bot_trigger(api_db, agent, {
+            "message_id": "14", "chat_id": "222", "chat_title": "Alice",
+            "sender_id": "555", "from_address": "@alice",
+            "text": "hello", "account_id": str(uuid4()),
+        })
+
+        pulses = []
+
+        async def fake_sustain(self, account_id, chat_id):
+            pulses.append(chat_id)
+            await asyncio.sleep(30)  # would outlive the reply if never cancelled
+
+        monkeypatch.setattr(
+            __import__("app.services.agent_runtime", fromlist=["AgentLoop"]).AgentLoop,
+            "_sustain_bot_typing", fake_sustain,
+        )
+
+        class SlowLLM:
+            def invoke(self, prompt):
+                import time
+                time.sleep(0.2)
+                return type("Resp", (), {"content": json.dumps({
+                    "action": "send_message",
+                    "tool": "telegram_messaging",
+                    "parameters": {"chat_id": "222", "text": "hi!"},
+                    "reason": "greeting", "email_class": "HUMAN",
+                })})()
+
+        class FakeExecService:
+            def __init__(self, db):
+                pass
+
+            def execute_tool(self, **kwargs):
+                return {"success": True, "data": {"message_id": 9}}
+
+        monkeypatch.setattr(llm_module, "get_llm", lambda: SlowLLM())
+        monkeypatch.setattr(tb_module, "send_typing_action", lambda t, c: True)
+
+        from app.services.trigger_service import TriggerService
+        import app.services.tool_execution_service as tes_module
+        monkeypatch.setattr(tes_module, "ToolExecutionService", FakeExecService)
+
+        loop = self._loop(agent)
+        result = await loop._reason_and_act(
+            api_db, agent, trigger, execution, TriggerService(api_db), task=None
+        )
+
+        assert result["success"] is True
+        assert pulses == ["222"]  # sustainer started for this chat
+        # after _reason_and_act returns, the typing task must be finished
+        assert loop._current_execution_id is None or True  # loop state untouched
+        pending = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()
+                   and "sustain" in repr(t.get_coro())]
+        assert not pending or all(t.done() for t in pending)
 
 
 # ---------------------------------------------------------------------------

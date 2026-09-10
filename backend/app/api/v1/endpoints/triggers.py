@@ -214,6 +214,89 @@ async def fire_manual_trigger(
 
 
 # ------------------------------------------------------------------
+# Chat: fire a manual chat trigger + wait for the agent's reply
+# ------------------------------------------------------------------
+
+class ChatRequest(BaseModel):
+    agent_id: str
+    message: str
+    timeout_seconds: int = 90
+
+
+@router.post("/chat")
+async def chat_with_agent(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """CEO ↔ agent chat: fires a chat-mode manual trigger and waits for the
+    agent loop to finish, then returns the agent's textual reply.
+
+    The trigger pipeline does all the work (RAG context, LLM, tool calls) —
+    this endpoint just wraps it with a bounded wait so the UI feels like chat.
+    On timeout the trigger keeps processing; the UI can poll /executions/all.
+    """
+    import asyncio
+
+    from app.services.agent_runtime import agent_runtime
+    from app.services.trigger_service import TriggerService
+    from app.models.agent import AIAgent
+    from app.models.trigger_execution import TriggerExecution, ExecutionStatus
+
+    agent = db.query(AIAgent).filter(AIAgent.id == uuid.UUID(request.agent_id)).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    if agent.user_id and agent.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your agent")
+    if not agent_runtime.is_running:
+        raise HTTPException(status_code=503, detail="Agent runtime is not running")
+
+    service = TriggerService(db)
+    trigger = service.fire_manual_trigger(
+        agent_id=uuid.UUID(request.agent_id),
+        instruction=request.message,
+        payload={"chat": True, "message": request.message},
+    )
+
+    timeout = max(10, min(int(request.timeout_seconds or 90), 180))
+    deadline = asyncio.get_event_loop().time() + timeout
+
+    # Bounded poll: the agent loop picks the trigger up within ~5s and the
+    # LLM+RAG+tools window is typically 10-30s.
+    while asyncio.get_event_loop().time() < deadline:
+        await asyncio.sleep(2)
+        db.expire_all()
+        fresh = db.query(TriggerExecution).filter(
+            TriggerExecution.trigger_id == trigger.id
+        ).order_by(TriggerExecution.created_at.desc()).first()
+        if fresh and fresh.status in (
+            ExecutionStatus.COMPLETED, ExecutionStatus.FAILED,
+            ExecutionStatus.CANCELLED, ExecutionStatus.TIMEOUT,
+        ):
+            reply_text = ""
+            result = fresh.result or {}
+            if fresh.status == ExecutionStatus.COMPLETED:
+                reply_text = str(result.get("reply_text") or result.get("message") or "")
+            if not reply_text and fresh.error_message:
+                reply_text = f"(Agent failed: {fresh.error_message[:200]})"
+            return {
+                "trigger_id": str(trigger.id),
+                "execution_id": str(fresh.id),
+                "status": fresh.status.value,
+                "reply": reply_text,
+                "tool_used": fresh.selected_tool,
+                "reasoning": fresh.llm_reasoning,
+            }
+
+    return {
+        "trigger_id": str(trigger.id),
+        "status": "pending",
+        "reply": "",
+        "message": "Agent still working — poll the executions endpoint",
+    }
+
+
+# ------------------------------------------------------------------
 # Execution history
 # ------------------------------------------------------------------
 

@@ -32,6 +32,7 @@ from app.models.gmail_sync_state import GmailSyncState
 from app.models.gmail_execution import GmailExecution, GmailExecutionStatus
 from app.models.telegram_sync_state import TelegramSyncState
 from app.models.telegram_bot_sync_state import TelegramBotSyncState
+from app.models.discord_bot_sync_state import DiscordBotSyncState
 
 __all__ = [
     "Base", "BaseModel",
@@ -48,4 +49,5 @@ __all__ = [
     "GmailExecution", "GmailExecutionStatus",
     "TelegramSyncState",
     "TelegramBotSyncState",
+    "DiscordBotSyncState",
 ]

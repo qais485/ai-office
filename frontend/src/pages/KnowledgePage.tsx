@@ -15,12 +15,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
 }
 
 const SOURCE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
-  pdf: { label: 'PDF', icon: '📄' },
-  document: { label: 'Document', icon: '📝' },
   text: { label: 'Text', icon: '📃' },
-  url: { label: 'URL', icon: '🔗' },
-  note: { label: 'Note', icon: '📋' },
-  faq: { label: 'FAQ', icon: '❓' },
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -38,7 +33,7 @@ function CreateKnowledgeModal({ isOpen, onClose, onSubmit }: {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('general')
-  const [sourceType, setSourceType] = useState('note')
+  const [sourceType] = useState('text')
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
 
@@ -57,7 +52,6 @@ function CreateKnowledgeModal({ isOpen, onClose, onSubmit }: {
     setName('')
     setDescription('')
     setCategory('general')
-    setSourceType('note')
     setContent('')
     setTags('')
     onClose()
@@ -94,8 +88,8 @@ function CreateKnowledgeModal({ isOpen, onClose, onSubmit }: {
             </div>
             <div>
               <label className="block text-sm font-medium text-white/80 mb-1">Source Type</label>
-              <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30">
+              <select value={sourceType} disabled
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none disabled:opacity-60 cursor-not-allowed">
                 {Object.entries(SOURCE_TYPE_CONFIG).map(([k, v]) => (
                   <option key={k} value={k}>{v.icon} {v.label}</option>
                 ))}
@@ -196,7 +190,7 @@ function KnowledgeCard({ knowledge, onView, onManageAccess, onDelete }: {
   onDelete: () => void
 }) {
   const category = CATEGORY_CONFIG[knowledge.category] || CATEGORY_CONFIG.general
-  const sourceType = SOURCE_TYPE_CONFIG[knowledge.source_type] || SOURCE_TYPE_CONFIG.note
+  const sourceType = SOURCE_TYPE_CONFIG[knowledge.source_type] || SOURCE_TYPE_CONFIG.text
   const status = STATUS_CONFIG[knowledge.status] || STATUS_CONFIG.active
 
   return (
@@ -370,7 +364,7 @@ export default function KnowledgePage() {
         description: null,
         category: r.category,
         content: r.snippet || r.content,
-        source_type: 'note' as const,
+        source_type: 'text' as const,
         status: 'active' as const,
         file_path: null,
         tags: null,

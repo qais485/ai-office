@@ -64,6 +64,28 @@ def _sender_label(msg: Dict[str, Any]) -> str:
     return (f"{first} {last}").strip() or "unknown"
 
 
+def send_typing_action(bot_token: str, chat_id: str) -> bool:
+    """Fire a 'typing…' chat action (sync, best-effort).
+
+    Telegram shows the indicator for ~5s per call; callers that need it
+    sustained re-invoke this every few seconds until the reply is sent.
+    """
+    token = str(bot_token or "").strip()
+    chat = str(chat_id or "").strip()
+    if not token or not chat:
+        return False
+    try:
+        resp = httpx.post(
+            f"{TG_API}/bot{token}/sendChatAction",
+            json={"chat_id": chat, "action": "typing"},
+            timeout=5,
+        )
+        return bool(resp.json().get("ok"))
+    except Exception:
+        logger.debug("Typing indicator failed", exc_info=True)
+        return False
+
+
 class TelegramBotMonitorService:
     """Per-account inbound poller for Telegram Bot (Bot API) integrations."""
 
@@ -117,7 +139,17 @@ class TelegramBotMonitorService:
     # ------------------------------------------------------------------
 
     def _linked_agents(self, account):
-        """Agents explicitly mapped to THIS bot account via AgentIntegration."""
+        """Agents wired to THIS bot account for customer chat.
+
+        Primary: explicit AgentIntegration mapping with integration_account_id
+        set to this account (the UI's agent-integration mapping flow).
+
+        Fallback: a generic telegram link created WITHOUT an account binding
+        (integration_account_id IS NULL) — resolve it against the account's
+        owner so the bot still reaches the owner's active telegram agents.
+        Strict per-account mappings are never widened this way, so another
+        user's agent can never fire on this account.
+        """
         from app.models.agent import AIAgent, LifecycleStatus
         from app.models.agent_integration import AgentIntegration
         from app.models.integration import Integration
@@ -128,7 +160,23 @@ class TelegramBotMonitorService:
         if not integration:
             return []
 
-        links = (
+        def _agents_for(links):
+            agents = []
+            for link in links:
+                agent = (
+                    self.db.query(AIAgent)
+                    .filter(
+                        AIAgent.id == link.agent_id,
+                        AIAgent.lifecycle_status == LifecycleStatus.ACTIVE,
+                    )
+                    .first()
+                )
+                if agent:
+                    agents.append(agent)
+            return agents
+
+        # Primary: agents explicitly mapped to this bot account
+        explicit = (
             self.db.query(AgentIntegration)
             .filter(
                 AgentIntegration.integration_id == integration.id,
@@ -137,20 +185,25 @@ class TelegramBotMonitorService:
             )
             .all()
         )
+        agents = _agents_for(explicit)
+        if agents:
+            return agents
 
-        agents = []
-        for link in links:
-            agent = (
-                self.db.query(AIAgent)
-                .filter(
-                    AIAgent.id == link.agent_id,
-                    AIAgent.lifecycle_status == LifecycleStatus.ACTIVE,
-                )
-                .first()
+        # Fallback: generic telegram links with no account binding —
+        # scoped to the bot account's owner (multi-tenant safe).
+        generic = (
+            self.db.query(AgentIntegration)
+            .join(AIAgent, AIAgent.id == AgentIntegration.agent_id)
+            .filter(
+                AgentIntegration.integration_id == integration.id,
+                AgentIntegration.integration_account_id.is_(None),
+                AgentIntegration.is_active == True,
+                AIAgent.user_id == account.user_id,
+                AIAgent.lifecycle_status == LifecycleStatus.ACTIVE,
             )
-            if agent:
-                agents.append(agent)
-        return agents
+            .all()
+        )
+        return _agents_for(generic)
 
     def _fire_for_message(self, account, msg: Dict[str, Any]) -> int:
         from app.services.trigger_service import TriggerService
@@ -223,13 +276,17 @@ class TelegramBotMonitorService:
 
         cap = int(getattr(settings, "TELEGRAM_BOT_MAX_TRIGGERS_PER_CYCLE", 10))
         fetch_limit = int(getattr(settings, "TELEGRAM_BOT_FETCH_LIMIT", 20))
+        # Long polling: Telegram holds the request until an update arrives
+        # (or the hold expires) — messages are picked up in real time instead
+        # of waiting for the next poll cycle.
+        long_poll = max(0, int(getattr(settings, "TELEGRAM_BOT_LONG_POLL_SECONDS", 50)))
         offset = (state.last_update_id or 0) + 1
 
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 f"{TG_API}/bot{bot_token}/getUpdates",
-                params={"offset": offset, "limit": fetch_limit, "timeout": 0},
-                timeout=15,
+                params={"offset": offset, "limit": fetch_limit, "timeout": long_poll},
+                timeout=long_poll + 15,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -293,6 +350,11 @@ class TelegramBotMonitorService:
                 "text": text[:2000],
                 "date": datetime.now(timezone.utc).isoformat(),
             }
+
+            # Real-time feedback: show "typing…" the moment a customer message
+            # is picked up. The reply path re-fires it every few seconds so the
+            # indicator stays alive until the agent's answer is delivered.
+            send_typing_action(bot_token, msg["chat_id"])
 
             fired += self._fire_for_message(account, msg)
             acked = update_id
@@ -400,7 +462,11 @@ def _check_all_sync() -> List[Dict[str, Any]]:
                     last = datetime.fromisoformat(state.last_sync_at)
                     if last.tzinfo is None:
                         last = last.replace(tzinfo=timezone.utc)
-                    if (now - last).total_seconds() < 60:
+                    # Long polling paces itself: each getUpdates call only
+                    # returns after the hold expires or an update arrives, so
+                    # a short per-account gap (not the old 60s) is enough.
+                    gap = int(getattr(settings, "TELEGRAM_BOT_ACCOUNT_GAP_SECONDS", 2))
+                    if (now - last).total_seconds() < gap:
                         continue
                 except (ValueError, TypeError):
                     pass

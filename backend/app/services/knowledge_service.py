@@ -176,10 +176,13 @@ class KnowledgeService:
             agent = agent_map.get(access.agent_id)
             if agent:
                 result.append({
+                    "id": str(access.id),
+                    "knowledge_id": str(access.knowledge_id),
                     "agent_id": str(agent.id),
                     "agent_name": agent.name,
                     "access_level": access.access_level,
                     "granted_by": access.granted_by,
+                    "created_at": access.created_at,
                 })
         return result
 

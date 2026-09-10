@@ -201,6 +201,62 @@ def seed_templates(db: Session):
                 "knowledge_base"
             ],
             "icon_url": "/icons/telegram.svg"
+        },
+        {
+            "name": "Discord Support Agent",
+            "role": "discord_support",
+            "description": "Handles customer conversations on Discord — via the connected Discord Bot — answers from the knowledge base, and escalates complex issues to the CEO.",
+            "default_goals": [
+                "Respond to Discord customer messages professionally",
+                "Answer customer questions from the company knowledge base",
+                "Resolve customer issues efficiently",
+                "Escalate complex issues to CEO when needed"
+            ],
+            "default_rules": [
+                "Always be polite and professional",
+                "Never make financial decisions without CEO approval",
+                "Keep responses concise and helpful",
+                "Respect Discord rate limits and never spam users"
+            ],
+            "default_permissions": [
+                "send_messages",
+                "read_knowledge"
+            ],
+            "default_tools": [
+                "discord_messaging",
+                "knowledge_base"
+            ],
+            "icon_url": "/icons/discord.svg"
+        },
+        {
+            "name": "Office Assistant Agent",
+            "role": "office_assistant",
+            "description": "A chat-first general assistant you talk to directly from the room dashboard. Answers questions from the company knowledge base, reads/writes Google Drive files, and can send emails when you ask it to.",
+            "default_goals": [
+                "Answer the CEO's questions accurately from the company knowledge base",
+                "Create, read and share Google Drive files when asked",
+                "Draft and send emails on explicit request",
+                "Be concise and respond in the same language as the request"
+            ],
+            "default_rules": [
+                "Always respond in the same language as the request",
+                "Only send emails when explicitly instructed",
+                "Never share files outside the company without CEO approval",
+                "Keep responses short and actionable"
+            ],
+            "default_permissions": [
+                "read_knowledge",
+                "read_files",
+                "write_files",
+                "read_emails"
+            ],
+            "default_tools": [
+                "knowledge_base",
+                "drive_files",
+                "email_reader",
+                "email_writer"
+            ],
+            "icon_url": "/icons/assistant.svg"
         }
     ]
 
@@ -790,6 +846,7 @@ def seed_tools(db: Session):
             "actions": [
                 {"name": "read_files", "display_name": "Read Files", "description": "Read Drive files", "risk_level": "low", "requires_approval": False},
                 {"name": "write_files", "display_name": "Write Files", "description": "Write Drive files", "risk_level": "low", "requires_approval": False},
+                {"name": "create_folder", "display_name": "Create Folder", "description": "Create a Drive folder", "risk_level": "low", "requires_approval": False},
                 {"name": "share_files", "display_name": "Share Files", "description": "Share Drive files", "risk_level": "low", "requires_approval": False}
             ],
             "permission_names": ["read_files", "write_files"]
