@@ -168,6 +168,23 @@ const HomePage = () => {
             />
           </div>
         </div>
+
+        {/* ── Legal links ────────────────────────────────────────── */}
+        <div className="relative z-10 mt-auto flex w-full items-center justify-center gap-4 pb-6 pt-4">
+          <Link
+            to="/privacy"
+            className="text-xs font-medium text-white/35 transition-colors hover:text-white/70"
+          >
+            Privacy Policy
+          </Link>
+          <span className="h-3 w-px bg-white/15" aria-hidden />
+          <Link
+            to="/terms"
+            className="text-xs font-medium text-white/35 transition-colors hover:text-white/70"
+          >
+            Terms of Service
+          </Link>
+        </div>
       </section>
     </MotionConfig>
   )
