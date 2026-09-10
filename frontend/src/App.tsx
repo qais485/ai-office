@@ -19,6 +19,8 @@ import IntegrationsPage from './pages/IntegrationsPage'
 import OAuth2CallbackPage from './pages/OAuth2CallbackPage'
 import LoginPage from './pages/LoginPage'
 import ProfilePage from './pages/ProfilePage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/TermsOfServicePage'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuthStore } from './stores/useAuthStore'
 
@@ -47,6 +49,8 @@ function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="login" element={<LoginPage />} />
+          <Route path="privacy" element={<PrivacyPolicyPage />} />
+          <Route path="terms" element={<TermsOfServicePage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="office" element={<OfficePage />} />
             <Route path="dashboard" element={<DashboardPage />} />
