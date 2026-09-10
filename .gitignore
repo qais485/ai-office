@@ -11,7 +11,6 @@ frontend/.env
 .opencode/
 .pytest_cache/
 graphify-out/
-Screenshots/
 
 # Python
 __pycache__/
