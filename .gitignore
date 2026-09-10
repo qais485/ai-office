@@ -6,11 +6,12 @@ frontend/.env
 # Markdown files in project root (keep README for GitHub)
 /*.md
 !README.md
+# Root-level design mockups folder only (root-anchored so src/components/ui stays tracked)
+/UI/
 .opencode/
 .pytest_cache/
 graphify-out/
 Screenshots/
-UI/
 
 # Python
 __pycache__/
