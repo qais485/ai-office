@@ -101,7 +101,7 @@ const HomePage = () => {
         <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-16 text-center sm:px-6 sm:pt-20">
           <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/10 px-3.5 py-1 text-xs font-medium text-indigo-300">
             <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
-            AI Virtual Office
+            aaoffice
           </span>
 
           <h1 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
