@@ -224,7 +224,9 @@ const MainLayout = () => {
         )}
       </header>
 
-      <main className="flex-1">
+      {/* pb-16 = extra scroll room so bottom-of-page content can scroll clear
+          of the sticky top navbar (h-16) instead of hiding behind it. */}
+      <main className="flex-1 pb-16">
         <Outlet />
       </main>
 
