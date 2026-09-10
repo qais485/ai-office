@@ -319,11 +319,3 @@ Authorization: Bearer <jwt>
 3. Frontend: run `npm run lint` and `npm run build` in `frontend/`
 4. Keep `.env` files out of commits (they are git-ignored) and never hard-code secrets
 5. Open a pull request with a clear description of what changed and why
-
-## License
-
-`[License information needed]`
-
-## Author
-
-`[Author name]`
