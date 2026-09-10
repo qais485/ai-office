@@ -220,13 +220,14 @@ Agent: Created "meeting-notes.txt" inside the "Qais" folder. (via drive_files)
 
 ## Screenshots / Demo
 
-![alt text](Screenshots/AgentTemplates-page.png) 
-![alt text](Screenshots/Dashboard-page.png) 
 ![alt text](Screenshots/Home-page.png) 
+![alt text](Screenshots/Dashboard-page.png) 
 ![alt text](Screenshots/Integrations-page.png) 
 ![alt text](Screenshots/MyAgents-page.png) 
 ![alt text](Screenshots/Office-page.png) 
+![alt text](Screenshots/AgentTemplates-page.png) 
 ![alt text](Screenshots/Room-page.png)
+
 
 ## API Documentation
 
