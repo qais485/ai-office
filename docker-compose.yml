@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector-enabled Postgres image — required: the first migration runs
+    # "CREATE EXTENSION vector", which vanilla postgres:16-alpine lacks.
+    image: pgvector/pgvector:pg16
     container_name: ai_office_db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -36,7 +38,14 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:?Set LLM_API_KEY in .env}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1200}
+      LLM_SKIP_AUTOMATED_SENDERS: ${LLM_SKIP_AUTOMATED_SENDERS:-true}
+      LLM_EMAIL_BODY_MAX_CHARS: ${LLM_EMAIL_BODY_MAX_CHARS:-1000}
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-${LLM_API_KEY:-}}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-${LLM_BASE_URL:-https://api.openai.com/v1}}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      RAG_SIMILARITY_THRESHOLD: ${RAG_SIMILARITY_THRESHOLD:-0.12}
+      MIN_SCHEDULED_INTERVAL_SECONDS: ${MIN_SCHEDULED_INTERVAL_SECONDS:-300}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["http://localhost:5173","http://localhost:3000"]}
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
@@ -46,7 +55,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3

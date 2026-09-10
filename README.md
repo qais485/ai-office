@@ -127,7 +127,7 @@ On startup the backend runs Alembic migrations, seeds templates/integrations/too
 
 ### Option B — Manual development setup
 
-**PostgreSQL with pgvector is required** (e.g. local install or the `postgres:16-alpine` image from `docker-compose.yml`).
+**PostgreSQL with pgvector is required** (e.g. local install with the extension, or the `pgvector/pgvector:pg16` image used by `docker-compose.yml`).
 
 ```bash
 # Backend
@@ -258,7 +258,7 @@ Use `Authorization: Bearer <jwt>` on all subsequent requests.
 | `GET` | `/api/v1/templates/` | Available agent templates |
 | `POST` | `/api/v1/hiring/hire` | Hire an agent from a template |
 | `GET` / `POST` / `DELETE` | `/api/v1/agents/` | Agent CRUD |
-| `GET` | `/api/v1/agents/{id}/analytics/performance` | Performance metrics |
+| `GET` | `/api/v1/analytics/agent/{agent_id}` | Performance metrics |
 
 ### Chat with an agent (synchronous)
 
