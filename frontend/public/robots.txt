@@ -1,0 +1,29 @@
+# AI Virtual Office - robots.txt
+# https://aaoffice.onrender.com/robots.txt
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /profile
+Disallow: /dashboard
+Disallow: /office
+Disallow: /agents
+Disallow: /tools
+Disallow: /permissions
+Disallow: /approvals
+Disallow: /risk-settings
+Disallow: /tasks
+Disallow: /knowledge
+Disallow: /ceo
+Disallow: /ceo/inbox
+Disallow: /integrations
+Disallow: /integrations/callback
+Disallow: /emails
+Disallow: /email-accounts
+
+# Explicitly allow public pages
+Allow: /privacy
+Allow: /terms
+
+Sitemap: https://aaoffice.onrender.com/sitemap.xml

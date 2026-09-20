@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useSEO } from '../lib/seo'
 
 const LAST_UPDATED = 'September 10, 2026'
 
@@ -17,6 +18,7 @@ function Section({ title, children }: SectionProps) {
 }
 
 const PrivacyPolicyPage = () => {
+  useSEO('/privacy')
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <p className="text-xs font-medium uppercase tracking-[0.25em] text-indigo-300/70">Legal</p>

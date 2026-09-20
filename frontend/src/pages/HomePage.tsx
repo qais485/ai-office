@@ -4,6 +4,7 @@ import { MotionConfig } from 'framer-motion'
 import { useAuthStore } from '../stores/useAuthStore'
 import { FlipFadeText } from '@/components/ui/flip-fade-text'
 import { PerspectiveCarousel } from '@/components/ui/perspective-carousel'
+import { useSEO } from '../lib/seo'
 
 /** Deterministic gradient slide images (no external assets needed). */
 function gradientSlide(from: string, to: string): string {
@@ -65,6 +66,7 @@ function useOptionalCardImages(fallbacks: string[]): string[] {
 const HomePage = () => {
   const { isAuthenticated } = useAuthStore()
   const [isMobile, setIsMobile] = useState(false)
+  useSEO('/')
 
   // Card1..Card5.png → carousel slides.
   const carouselSrcs = useOptionalCardImages(CAROUSEL_SLIDES.map((s) => s.src))

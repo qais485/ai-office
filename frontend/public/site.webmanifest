@@ -1,0 +1,21 @@
+{
+  "name": "AI Virtual Office",
+  "short_name": "AI Office",
+  "description": "Self-hosted AI virtual office platform. Hire AI agents into virtual rooms, connect Telegram, Discord & Gmail, and let them handle customers 24/7.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06060f",
+  "theme_color": "#06060f",
+  "icons": [
+    {
+      "src": "/favicon1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

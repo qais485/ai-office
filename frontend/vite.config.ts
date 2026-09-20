@@ -28,6 +28,18 @@ export default defineConfig(({ mode }) => {
         '@': '/src',
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
+            'vendor-motion': ['framer-motion', 'motion', 'gsap'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 600,
+    },
     server: {
       port: 5173,
       ...(proxyTarget

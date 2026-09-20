@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useSEO } from '../lib/seo'
 
 declare global {
   interface Window {
@@ -24,6 +25,7 @@ const LoginPage = () => {
   const buttonRef = useRef<HTMLDivElement>(null)
   const { googleLogin, isAuthenticated, isLoading, error, clearError } = useAuthStore()
   const navigate = useNavigate()
+  useSEO('/login')
 
   useEffect(() => {
     if (isAuthenticated) {
